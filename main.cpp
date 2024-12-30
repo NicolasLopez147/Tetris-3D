@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include <vector>
 
 class Vector3D {
@@ -23,8 +24,9 @@ protected:
     Vector3D color;
 public:
     Block(const Vector3D& pos, const Vector3D& col) : position(pos), color(col) {}
-    virtual void draw() const = 0;
-    virtual void rotate(float angle, const Vector3D& axis) = 0;
+    virtual void draw() const {
+        std::cout << "Drawing block at position (" << position.x << ", " << position.y << ", " << position.z << ") with color (" << color.x << ", " << color.y << ", " << color.z << ")" << std::endl;
+    }
     Vector3D getPosition() const { return position; }
     void setPosition(const Vector3D& newPos) { position = newPos; }
 };
@@ -54,7 +56,7 @@ public:
         }
     }
 
-    void rotate(float angle, const Vector3D& axis) override {
+    void rotate(float angle, const Vector3D& axis) {
         calculateCenter();
         float radians = angle * 3.14159265f / 180.0f;
         for (auto& block : blocks) {
@@ -149,6 +151,75 @@ public:
     void draw() const;
 };
 
+class Game {
+private:
+    Grid grid;
+    Tetromino currentTetromino;
+    Tetromino nextTetromino;
+    bool isRunning;
+    int score;
+    int level;
+    int linesCleared;
+    float fallSpeed;
+    int width, height, depth;
+
+    const int LINES_PER_LEVEL = 10;
+    const float SPEED_INCREMENT = 0.1f;
+
+public:
+    Game(int gridWidth, int gridHeight, int gridDepth): width(gridWidth), height(gridHeight), depth(gridDepth),grid(gridWidth, gridHeight, gridDepth), isRunning(true), score(0), level(1), linesCleared(0), fallSpeed(1.0f) {}
+
+    bool getIsRunning() const { return isRunning; }
+    void start() {
+        isRunning = true;
+        score = 0;
+        level = 1;
+        linesCleared = 0;
+        fallSpeed = 1.0f;
+        grid = Grid(width, height, depth);
+        currentTetromino = Tetromino(Vector3D(width / 2, height - 1, depth / 2), Vector3D(1, 0, 0));
+        nextTetromino = Tetromino(Vector3D(width / 2, height - 1, depth / 2), Vector3D(0, 1, 0));
+    }
+
+    bool checkGameOver(Tetromino currentTetromino) const{
+        return grid.checkCollision(currentTetromino);
+    }
+    void update(float deltaTime){
+      static float accumulatedTime = 0.0f;
+      accumulatedTime += deltaTime;
+      if (accumulatedTime >= fallSpeed) {
+        currentTetromino.move(Vector3D(0, -1, 0));
+        grid.placeTetromino(currentTetromino);
+        grid.clearLines();
+        linesCleared += 1;
+
+        if(linesCleared % LINES_PER_LEVEL == 0){
+          level += 1;
+          linesCleared = 0;
+          fallSpeed = std::max(fallSpeed - SPEED_INCREMENT, 0.2f);
+        }
+        currentTetromino = nextTetromino;
+        nextTetromino = Tetromino(Vector3D(width / 2, height - 1, depth / 2), Vector3D(0, 1, 0));
+        isRunning = !checkGameOver(currentTetromino);
+        accumulatedTime = 0.0f;
+      }
+    }
+
+    void moveTetromino(const Vector3D& direction){
+      currentTetromino.move(direction);
+      if(grid.checkCollision(currentTetromino)){
+        currentTetromino.move((-direction.x,-direction.y,-direction.z));
+      }
+    }
+    void rotateTetromino(float angle, const Vector3D& axis){
+      currentTetromino.rotate(angle,axis);
+      if(grid.checkCollision(currentTetromino)){
+        currentTetromino.rotate(-angle,axis);
+      }
+    }
+    void draw() const;
+};
+
 class InputHandler {
   public:
     void handleInput(int key, Game& game){
@@ -174,81 +245,19 @@ class InputHandler {
       }
     }
 };
-class Game {
-private:
-    Grid grid;
-    Tetromino currentTetromino;
-    Tetromino nextTetromino;
-    bool isRunning;
-    int score;
-    int level;
-    int linesCleared;
-    float fallSpeed;
-    int width, height, depth;
 
-    const int LINES_PER_LEVEL = 10;
-    const float SPEED_INCREMENT = 0.1f;
-
-public:
-    Game(int gridWidth, int gridHeight, int gridDepth)
-        : width(gridWidth), height(gridHeight), depth(gridDepth),
-          grid(gridWidth, gridHeight, gridDepth),
-          isRunning(true), score(0), level(1), linesCleared(0), fallSpeed(1.0f) {}
-
-    void start() {
-        isRunning = true;
-        score = 0;
-        level = 1;
-        linesCleared = 0;
-        fallSpeed = 1.0f;
-        grid = Grid(width, height, depth);
-        currentTetromino = Tetromino(Vector3D(width / 2, height - 1, depth / 2), Vector3D(1, 0, 0));
-        nextTetromino = Tetromino(Vector3D(width / 2, height - 1, depth / 2), Vector3D(0, 1, 0));
+int main() {
+    Game game(10, 20, 10);
+    game.start();
+    InputHandler inputHandler;
+    while (game.getIsRunning()) {
+        std::cout<<"Game is running"<<std::endl;
+        game.update(0.1f);
+        // game.draw();
+        char key;
+        std::cin >> key;
+        inputHandler.handleInput(key,game);
     }
 
-    void update(float deltaTime){
-      static float accumulatedTime = 0.0f;
-      accumulatedTime += deltaTime;
-      if (accumulatedTime >= fallSpeed) {
-        currentTetromino.move(Vector3D(0, -1, 0));
-        grid.placeTetromino(currentTetromino);
-        grid.clearLines();
-        linesCleared += 1;
-
-        if(linesCleared % LINES_PER_LEVEL == 0){
-          level += 1;
-          linesCleared = 0;
-          fallSpeed = std::max(fallSpeed - SPEED_INCREMENT, 0.2f);
-        }
-        currentTetromino = nextTetromino;
-        auto [gameOver,newTetromino] = checkGameOver();
-        if(gameOver){
-          isRunning = false;
-        }
-        nextTetromino = newTetromino;
-        accumulatedTime = 0.0f;
-      }
-    }
-    std::pair<bool,Tetromino> checkGameOver() const{
-      Tetromino newTetromino(Vector3D(width / 2, height - 1, depth / 2), Vector3D(1, 0, 0));
-      if(grid.checkCollision(newTetromino)){
-        return std::make_pair(true,newTetromino);
-      }
-      return std::make_pair(false,newTetromino);
-    }
-
-    void moveTetromino(const Vector3D& direction){
-      currentTetromino.move(direction);
-      if(grid.checkCollision(currentTetromino)){
-        currentTetromino.move((-direction.x,-direction.y,-direction.z));
-      }
-    }
-    void rotateTetromino(float angle, const Vector3D& axis){
-      currentTetromino.rotate(angle,axis);
-      if(grid.checkCollision(currentTetromino)){
-        currentTetromino.rotate(-angle,axis);
-      }
-    }
-    void draw() const;
-};
-
+    return 0;
+}
