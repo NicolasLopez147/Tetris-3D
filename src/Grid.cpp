@@ -39,6 +39,17 @@ public:
         return false;
     }
 
+    void printGrid(){
+        for (int y = height - 1; y >= 0; --y) {
+            for (int x = 0; x < width; ++x) {
+                std::cout << (cells[x][y][0] ? "X" : ".");
+            }
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
+        std::cout << "-----------------------------------"<<std::endl;
+    }
+
     // Places the given Tetromino onto the grid and updates the occupied cells and line counters
     void placeTetromino(const Tetromino& tetromino) {
         for (const auto& block : tetromino.getBlocks()) {
@@ -56,8 +67,10 @@ public:
     }
 
     // Clears any fully occupied lines (layers) and shifts the above layers down
-    void clearLines() {
-        for (int y = 0; y < height; ++y) {
+    int clearLines() {
+        int lines = 0;
+        int y = 0;
+        while(y < height){
             // Check if the layer is fully occupied
             if (lineCounters[y] == width * depth) {
                 // Clear the layer
@@ -80,8 +93,12 @@ public:
 
                 // Clear the topmost layer
                 lineCounters[height - 1] = 0;
+                lines+=1;
+                y--;
             }
+            y++;
         }
+        return lines;
     }
 
     // Draws the grid (implementation depends on the graphics or console setup)

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "src\Game.cpp"
+#include "src\InputHandler.cpp"
 #include <assert.h>
 
 void test_Vector3D() {
@@ -29,23 +29,8 @@ void test_TetrominoMovement() {
     int depth = 10;
     Tetromino t(Vector3D(width / 2, height - 1, depth / 2),1);
     assert(!t.getBlocks().empty());
-    // for (const auto& block : t.getBlocks()) {
-    //         Vector3D pos = block.getPosition();
-    //         int x = static_cast<int>(pos.x);
-    //         int y = static_cast<int>(pos.y);
-    //         int z = static_cast<int>(pos.z);
-    //         std::cout << x <<" "<< y <<" "<<z<< std::endl;
-    // }
-    // std::cout << " ---------------------------------------------- "<< std::endl;
     t.move(Vector3D(0, -1, 0));
     assert(!t.getBlocks().empty());
-    // for (const auto& block : t.getBlocks()) {
-    //         Vector3D pos = block.getPosition();
-    //         int x = static_cast<int>(pos.x);
-    //         int y = static_cast<int>(pos.y);
-    //         int z = static_cast<int>(pos.z);
-    //         std::cout << x <<" "<< y <<" "<<z<< std::endl;
-    // }
 
 }
 
@@ -58,30 +43,22 @@ void test_Grid() {
     assert(!grid.checkCollision(t));
     while(!grid.checkCollision(t)){
         t.move(Vector3D(-1, 0, 0));
-        // std::cout<< "-----------------------------------"<<std::endl;
-        // for (const auto& block : t.getBlocks()) {
-        //         Vector3D pos = block.getPosition();
-        //         int x = static_cast<int>(pos.x);
-        //         int y = static_cast<int>(pos.y);
-        //         int z = static_cast<int>(pos.z);
-        //         std::cout << x <<" "<< y <<" "<<z<< std::endl;
-        // }
     }
 }
 
 void test_Game() {
-    
-    Game game(10, 20, 10);
-    
+    InputHandler inputHandler;
+    Game game(10, 20, 1);
     game.start();
-
-    
-    // assert(game.getIsRunning() == true);
-
-    // game.update(1.0f);
-    
-    // assert(game.getIsRunning() == true);
-    // std::cout << "Game started" << std::endl;
+    assert(game.getIsRunning() == true);
+    char a;
+    while(game.getIsRunning()){
+        std::cin >> a;
+        inputHandler.handleInput(a,game);
+        game.update(1.0f);
+        std::cout << "Lines cleared: " << game.getLinesCleared() << std::endl;
+    }
+    assert(!game.getIsRunning() == true);
 }
 
 int main() {

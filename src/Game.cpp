@@ -1,4 +1,5 @@
 #include "Grid.cpp"
+#include <random>
 
 class Game {
 private:
@@ -35,21 +36,27 @@ private:
     // Constants for level progression
     const int LINES_PER_LEVEL = 10;     // Lines needed to level up
     const float SPEED_INCREMENT = 0.1f; // Speed increase per level
+    const Vector3D POSITION_NEW_TETROMINO = Vector3D(0, height , 0);
+    const Vector3D POSITION_NEXT_TETROMINO = Vector3D(width + 5, 0 , 0);
 
     // Generates a random shape ID (0-6 for Tetromino shapes)
     int setShape() {
-        return rand() % 7;
+      std::random_device rd;
+      std::mt19937 gen(rd());
+      std::uniform_int_distribution<> dist(0, 6);
+      return dist(gen);
     }
 
-    // Adjusts a Tetromino's position to ensure it fits within the grid
-    void accommodateTetromino(Tetromino& tetromino) {
+    // Ensures a Tetromino is placed at a valid position on the grid
+    Tetromino checkPositionTetromino(Vector3D pos, int shape) {
+        Tetromino tetromino(pos, shape);
         for (const auto& block : tetromino.getBlocks()) {
-            Vector3D pos = block.getPosition();
-            int x = static_cast<int>(pos.x);
-            if (x >= width) {
-                tetromino.move(Vector3D(x - width, 0, 0));
+            Vector3D blockPos = block.getPosition();
+            if (blockPos.y >= height) {
+                tetromino.move(Vector3D(0, -(blockPos.y - height + 1), 0));
             }
         }
+        return tetromino;
     }
 
 public:
@@ -71,17 +78,8 @@ public:
         fallSpeed = 1.0f;
         grid = Grid(width, height, depth);
         nextShape = setShape();
-        currentTetromino = checkPositionTetromino(Vector3D(width / 2, height - 1, depth / 2), setShape());
-        nextTetromino = Tetromino(Vector3D(width + 5, 0, 0), nextShape);
-    }
-
-    // Ensures a Tetromino is placed at a valid position on the grid
-    Tetromino checkPositionTetromino(Vector3D pos, int shape) {
-        Tetromino tetromino(pos, shape);
-        while (grid.checkCollision(tetromino)) {
-            tetromino.move(Vector3D(0, -1, 0)); // Adjust position downward
-        }
-        return tetromino;
+        currentTetromino = checkPositionTetromino(POSITION_NEW_TETROMINO, setShape());
+        nextTetromino = Tetromino(POSITION_NEXT_TETROMINO, nextShape);
     }
 
     // Checks if the game is over based on the current Tetromino's position
@@ -91,6 +89,7 @@ public:
 
     // Updates the game state based on the time elapsed
     void update(float deltaTime) {
+      grid.printGrid();
         static float accumulatedTime = 0.0f;
         accumulatedTime += deltaTime;
 
@@ -102,8 +101,7 @@ public:
             if (grid.checkCollision(currentTetromino)) {
                 currentTetromino.move(Vector3D(0, 1, 0)); // Undo the move
                 grid.placeTetromino(currentTetromino);
-                grid.clearLines();
-                linesCleared++;
+                linesCleared += grid.clearLines();
 
                 // Level up if enough lines are cleared
                 if (linesCleared % LINES_PER_LEVEL == 0) {
@@ -113,9 +111,9 @@ public:
                 }
 
                 // Set up the next Tetromino
-                currentTetromino = Tetromino(Vector3D(width / 2, height - 1, depth / 2), nextShape);
+                currentTetromino = checkPositionTetromino(POSITION_NEW_TETROMINO, nextShape);
                 nextShape = setShape();
-                nextTetromino = Tetromino(Vector3D(width + 5, 0, 0), nextShape);
+                nextTetromino = Tetromino(POSITION_NEXT_TETROMINO, nextShape);
 
                 // Check if the game is over
                 isRunning = !checkGameOver(currentTetromino);
@@ -141,6 +139,9 @@ public:
         }
     }
 
+    int getScore() const { return score; }
+
+    int getLinesCleared() const { return linesCleared; }
     // Draws the game elements (grid, Tetrominos, etc.)
     void draw() const;
 };
