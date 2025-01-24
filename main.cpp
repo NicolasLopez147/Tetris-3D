@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "src/Game.cpp"
 
 // Callback function to adjust the OpenGL viewport when the window is resized
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
@@ -160,116 +161,53 @@ void processInput(GLFWwindow* window, glm::vec3& cubePosition) {
 }
 
 int main() {
-    // Initialize GLFW
-    if (!glfwInit()) {
-        std::cerr << "Error: Failed to initialize GLFW" << std::endl;
-        return -1;
-    }
+    srand(static_cast<unsigned>(time(nullptr))); // Seed the random number generator
+// Initialize GLFW
+        if (!glfwInit()) {
+            std::cerr << "Error initializing GLFW" << std::endl;
+            return 0;
+        }
+    
+        // Create a window
+        GLFWwindow* window = glfwCreateWindow(1600, 1200, "Tetromino Demo", nullptr, nullptr);
+        if (!window) {
+            std::cerr << "Error creating window" << std::endl;
+            glfwTerminate();
+            return 0;
+        }
+ 
+        glfwMakeContextCurrent(window);
+        glewExperimental = true;
+        if (glewInit() != GLEW_OK) {
+            std::cerr << "Error initializing GLEW" << std::endl;
+            return 0;
+        }
+ 
+        glEnable(GL_DEPTH_TEST); // Enable depth testing for 3D rendering
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // Set background color
+ 
+        // Vector3D pos(1.0f, 0.0f, 0.0f); // Initial position for the Tetromino
+ 
+        // Tetromino tetrominoI(pos,2); // Create a Tetromino of type I-shape
+ 
+        bool wPressed = false;
+        bool qPressed = false;
+        bool ePressed = false;
+ 
+        Game game = Game(10,20,10);
+        game.start();
+ 
+        while (!glfwWindowShouldClose(window) && game.getIsRunning()) {
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear the screen
+ 
+            // Draw the Tetromino
+            game.update(0.0f);
+ 
+            glfwSwapBuffers(window); // Swap front and back buffers
+            glfwPollEvents(); // Poll for and process events
+        }
+ 
+        glfwTerminate(); // Clean up and terminate GLFW
+        return 0;
 
-    // Create a GLFW window
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    GLFWwindow* window = glfwCreateWindow(1600, 1200, "3D Grid - OpenGL", nullptr, nullptr);
-    if (!window) {
-        std::cerr << "Error: Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return -1;
-    }
-    glfwMakeContextCurrent(window);
-
-    // Initialize GLEW
-    glewExperimental = GL_TRUE;
-    if (glewInit() != GLEW_OK) {
-        std::cerr << "Error: Failed to initialize GLEW" << std::endl;
-        glfwDestroyWindow(window);
-        glfwTerminate();
-        return -1;
-    }
-
-    // Configure OpenGL viewport and settings
-    int viewportWidth, viewportHeight;
-    glfwGetFramebufferSize(window, &viewportWidth, &viewportHeight);
-    glViewport(0, 0, viewportWidth, viewportHeight);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glEnable(GL_DEPTH_TEST);  // Enable depth testing for 3D rendering
-    glEnable(GL_BLEND);       // Enable blending for transparency
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    // Create the shader program
-    GLuint shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
-
-    // Generate grid vertices and set up a VAO/VBO for the grid
-    std::vector<float> gridVertices = generateGridVertices(6, 15, 6);
-    GLuint VAO, VBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, gridVertices.size() * sizeof(float), gridVertices.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-    // Generate cube vertices and set up a VAO/VBO for the cube
-    glm::vec3 cubePosition(0.0f, 0.0f, 1.0f);
-    float cubeSize = 1.0f;
-    std::vector<float> cubeVertices = generateCubeVertices(cubePosition.x, cubePosition.y, cubePosition.z, cubeSize);
-    GLuint cubeVAO, cubeVBO;
-    glGenVertexArrays(1, &cubeVAO);
-    glGenBuffers(1, &cubeVBO);
-    glBindVertexArray(cubeVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-    glBufferData(GL_ARRAY_BUFFER, cubeVertices.size() * sizeof(float), cubeVertices.data(), GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-    // Set up projection and view matrices
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)viewportWidth / viewportHeight, 0.1f, 100.0f);
-    glm::mat4 view = glm::lookAt(glm::vec3(15, 25, 15), glm::vec3(5, 10, 5), glm::vec3(0, 1, 0));
-
-    // Render loop
-    while (!glfwWindowShouldClose(window)) {
-        processInput(window, cubePosition);  // Update cube position based on user input
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // Clear buffers
-
-        glUseProgram(shaderProgram);  // Activate shader program
-
-        // Update model matrix for the cube
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), cubePosition);
-
-        // Pass matrices to the shader
-        GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
-        GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
-        GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
-        // Render the grid
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_LINES, 0, gridVertices.size() / 3);
-        glBindVertexArray(0);
-
-        // Render the cube
-        glBindVertexArray(cubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, cubeVertices.size() / 3);
-        glBindVertexArray(0);
-
-        glfwSwapBuffers(window);  // Swap buffers
-        glfwPollEvents();        // Process events
-    }
-
-    // Clean up resources
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteProgram(shaderProgram);
-
-    glfwDestroyWindow(window);
-    glfwTerminate();
-    return 0;
 }

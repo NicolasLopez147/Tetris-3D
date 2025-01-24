@@ -5,7 +5,7 @@ public:
     // Processes user input and performs the corresponding actions on the game
     void handleInput(int key, Game& game) {
         switch (key) {
-        case 's': // Move the current Tetromino down
+        /* case 's': // Move the current Tetromino down
             game.moveTetromino(Vector3D(0, -1, 0));
             break;
 
@@ -27,7 +27,7 @@ public:
 
         case 'e': // Rotate the Tetromino 90 degrees around the X-axis
             game.rotateTetromino(90, Vector3D(1, 0, 0));
-            break;
+            break; */
 
         default:
             // Optional: Handle invalid keys or no-op

@@ -36,7 +36,7 @@ private:
     // Constants for level progression
     const int LINES_PER_LEVEL = 10;     // Lines needed to level up
     const float SPEED_INCREMENT = 0.1f; // Speed increase per level
-    const Vector3D POSITION_NEW_TETROMINO = Vector3D(0, height , 0);
+    const Vector3D POSITION_NEW_TETROMINO = Vector3D(0, 0, 0);
     const Vector3D POSITION_NEXT_TETROMINO = Vector3D(width + 5, 0 , 0);
 
     // Generates a random shape ID (0-6 for Tetromino shapes)
@@ -89,7 +89,9 @@ public:
 
     // Updates the game state based on the time elapsed
     void update(float deltaTime) {
-      grid.printGrid();
+
+        grid.printGrid();
+        currentTetromino.draw();
         static float accumulatedTime = 0.0f;
         accumulatedTime += deltaTime;
 
@@ -112,6 +114,7 @@ public:
 
                 // Set up the next Tetromino
                 currentTetromino = checkPositionTetromino(POSITION_NEW_TETROMINO, nextShape);
+                currentTetromino.draw();
                 nextShape = setShape();
                 nextTetromino = Tetromino(POSITION_NEXT_TETROMINO, nextShape);
 
@@ -132,7 +135,7 @@ public:
     }
 
     // Rotates the current Tetromino around a specified axis
-    void rotateTetromino(float angle, const Vector3D& axis) {
+    void rotateTetromino(float angle, const glm::vec3& axis) {
         currentTetromino.rotate(angle, axis);
         if (grid.checkCollision(currentTetromino)) {
             currentTetromino.rotate(-angle, axis); // Undo the rotation
