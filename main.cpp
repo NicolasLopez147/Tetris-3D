@@ -1036,6 +1036,10 @@ class Game{
             }
         }
 
+        void moveTetrominoToProjectedPosition(){
+            currentTetromino = calculateProjection(currentTetromino);
+        }
+
         int getScore() const{
             return score;
         }
@@ -1087,7 +1091,9 @@ public:
     case GLFW_KEY_C: // Rotate the Tetromino 90 degrees around the Y-axis
         game.rotateTetromino(90.0f, Vector3D(0, 1, 0));
         break;
-
+    case GLFW_KEY_SPACE: // Restart the game
+        game.moveTetrominoToProjectedPosition();
+        break;
     default:
         // Optional: Handle invalid keys or no-op
         break;
@@ -1275,6 +1281,7 @@ private:
                 "Key D: Move right X-axis",
                 "Key Q: Move left Z-axis",
                 "Key E: Rotate right Z-axis",
+                "Key  SPACE: Move to projected position",
             }},
             {"Rotation Controls:", {
                 "Key Z: Rotate around Z-axis",
