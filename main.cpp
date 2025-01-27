@@ -848,6 +848,142 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 }
 
+
+#include "./src/fontworks.cpp" // Ensure the refactored version is used
+
+
+// Enumeration to define the game states
+enum GameState {
+    Menu,
+    Playing,
+    GameOver
+};
+
+// Global or static variable to track the falling offset
+float fallingOffset = 0.0f;
+
+// Function to draw the title with a falling effect for the letter 'S'
+void drawTitle(TextShader& textShader, float windowWidth, float windowHeight) {
+    // Define the position and size for "TETRIS"
+    float size = 1.5f;
+    float titleX = (windowWidth / 2) - 120.0f; // Center the title
+    float titleY = windowHeight - 100.0f;     // Position near the top
+    std::vector<glm::vec3> colors = {
+        glm::vec3(1.0f, 0.0f, 0.0f), // T: Red
+        glm::vec3(1.0f, 0.5f, 0.0f), // E: Orange
+        glm::vec3(1.0f, 1.0f, 0.0f), // T: Yellow
+        glm::vec3(0.0f, 1.0f, 0.0f), // R: Green
+        glm::vec3(0.0f, 1.0f, 1.0f), // I: Cyan color
+        glm::vec3(1.0f, 0.0f, 1.0f)  // S: Magenta (Fuchsia)
+    };
+
+    // Render each letter of "TETRIS"
+    std::string title = "TETRIS";
+    for (size_t i = 0; i < title.size(); ++i) {
+        if (title[i] == 'S') {
+            // Apply falling effect for the letter 'S'
+            float letterX = titleX + i * 40.0f; // Calculate X position
+            float letterY = titleY - fallingOffset; // Apply fallingOffset to Y position
+
+            // Render the falling 'S'
+            renderText(textShader, std::string(1, title[i]), letterX, letterY, size, colors[i]);
+
+            // Reset or loop the falling effect
+            if (fallingOffset > 100.0f) { // If it falls beyond a threshold
+                fallingOffset = 0.0f;     // Reset to the starting position
+            } else {
+                fallingOffset += 0.5f;    // Increment the offset (controls speed)
+            }
+        } else {
+            // Render other letters without animation
+            renderText(textShader, std::string(1, title[i]), titleX + i * 40.0f, titleY, size, colors[i]);
+        }
+    }
+
+    // Render "3D" below "TETRIS" in bold white color
+    renderText(textShader, "3D", titleX + 80.0f, titleY - 60.0f, size, glm::vec3(1.0f, 1.0f, 1.0f));
+}
+
+
+// Function to draw the footer
+void drawFooter(TextShader& textShader, float windowWidth) {
+    float footerX = (windowWidth / 2) - 180.0f; // Centered horizontally
+    float footerY = 20.0f;                     // Position near the bottom
+    renderText(textShader, "Copyright: Nicolas LOPEZ and Nicolas RINCON", footerX, footerY, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f)); // White color
+}
+
+
+// Function to check if a mouse click is within a button's boundaries
+bool isMouseOverButton(double mouseX, double mouseY, float buttonX, float buttonY, float buttonWidth, float buttonHeight) {
+    return mouseX >= buttonX && mouseX <= buttonX + buttonWidth && mouseY >= buttonY && mouseY <= buttonY + buttonHeight;
+}
+
+// Function to draw a button with hover effect
+void drawButton(TextShader& textShader, float x, float y, float width, float height, const std::string& text, glm::vec3 textColor, bool isHovered) {
+    // Draw the button rectangle (background)
+    glBegin(GL_QUADS);
+    glColor3f(0.2f, 0.2f, 0.2f); // Button background color
+    glVertex2f(x, y);                // Bottom-left
+    glVertex2f(x + width, y);        // Bottom-right
+    glVertex2f(x + width, y + height); // Top-right
+    glVertex2f(x, y + height);       // Top-left
+    glEnd();
+
+    // Change text color if hovered
+    glm::vec3 finalTextColor = isHovered ? glm::vec3(1.0f, 0.8f, 0.0f) : textColor; // Hover color is orange
+    float textX = x + (width / 2) - (text.size() * 10.0f) / 2; // Center horizontally
+    float textY = y + (height / 2) - 10.0f; // Center vertically
+    renderText(textShader, text, textX, textY, 1.0f, finalTextColor);
+}
+
+// Function to display the menu
+void displayMenu(GLFWwindow* window, GameState &state) {
+    // Initialize a TextShader instance
+    TextShader textShader;
+    glm::mat4 projection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f); // Flip the Y-axis
+    textShader.use();
+    textShader.setMat4("projection", projection);
+
+    // Get window dimensions dynamically
+    int windowWidth, windowHeight;
+    glfwGetWindowSize(window, &windowWidth, &windowHeight);
+
+    // Button properties (centered)
+    float buttonWidth = 200.0f, buttonHeight = 50.0f;
+    float startX = (windowWidth / 2) - 120.0f;
+    float startY = windowHeight / 2 - 50.0f;  // "START" button
+    float quitX = startX;                     // Same X as "START"
+    float quitY = startY - 80.0f;             // "QUIT" button below "START"
+
+    double mouseX, mouseY;
+    glfwGetCursorPos(window, &mouseX, &mouseY);
+    mouseY = windowHeight - mouseY; // Flip Y-axis to align with OpenGL
+
+    // Check hover state for each button
+    bool startHovered = isMouseOverButton(mouseX, mouseY, startX, startY, buttonWidth, buttonHeight);
+    bool quitHovered = isMouseOverButton(mouseX, mouseY, quitX, quitY, buttonWidth, buttonHeight);
+
+    // Render the title
+    drawTitle(textShader, windowWidth, windowHeight);
+
+    // Render menu buttons with hover effect
+    drawButton(textShader, startX, startY, buttonWidth, buttonHeight, "START", glm::vec3(1.0f, 1.0f, 1.0f), startHovered);
+    drawButton(textShader, quitX, quitY, buttonWidth, buttonHeight, "QUIT", glm::vec3(1.0f, 1.0f, 1.0f), quitHovered);
+
+    // Render the footer
+    drawFooter(textShader, windowWidth);
+
+    // Check for mouse clicks
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+        if (startHovered) {
+            state = Playing; // Transition to the Playing state
+        }
+        if (quitHovered) {
+            glfwSetWindowShouldClose(window, true); // Close the window
+        }
+    }
+}
+
 int main() {
     // Initialize GLFW
     if (!glfwInit()) {
@@ -860,14 +996,13 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(1600, 1200, "3D Grid - OpenGL", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(800, 600, "Tetris 3D", nullptr, nullptr);
     if (!window) {
         std::cerr << "Error: Failed to create GLFW window" << std::endl;
         glfwTerminate();
         return -1;
     }
     glfwMakeContextCurrent(window);
-
 
     // Initialize GLEW
     glewExperimental = GL_TRUE;
@@ -882,16 +1017,37 @@ int main() {
     int viewportWidth, viewportHeight;
     glfwGetFramebufferSize(window, &viewportWidth, &viewportHeight);
     glViewport(0, 0, viewportWidth, viewportHeight);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glEnable(GL_DEPTH_TEST);  // Enable depth testing for 3D rendering
-    glEnable(GL_BLEND);       // Enable blending for transparency
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_DEPTH_TEST);
 
+    // Set the initial game state
+    GameState state = Menu;
     Game game(window);
 
-    glfwSetWindowUserPointer(window,&game);
-    glfwSetKeyCallback(window,key_callback);
+    // Main loop
+    while (!glfwWindowShouldClose(window)) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        switch (state) {
+            case Menu:
+                displayMenu(window, state);
+                break;
+            case Playing:
+                game.run(); // Start the game
+                state = GameOver; // Temporary, for when the game ends
+                break;
+            case GameOver:
+                // Implement a game over screen or restart logic if needed
+                glfwSetWindowShouldClose(window, true);
+                break;
+        }
 
-    game.run();
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    // Clean up
+    glfwDestroyWindow(window);
+    glfwTerminate();
     return 0;
 }
+
