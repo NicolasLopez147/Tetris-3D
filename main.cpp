@@ -8,26 +8,11 @@
 #include <math.h>
 #include <random>
 #include <algorithm>
-
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include <map>
 #include <fstream>
 #include <sstream>
-#include <string>
-
-
-// Minimal TextShader class
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-#include <iostream>
-#include <vector>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <ft2build.h>
-#include FT_FREETYPE_H
-#include <map>
 #include <string>
 
 class TextShader {
@@ -178,6 +163,7 @@ public:
     }
 
     void renderText(const std::string& text, float x, float y, float scale, glm::vec3 color) {
+        initializeFont("./utils/Super_cartoon.ttf");
         use();
         setVec3("textColor", color);
         glEnable(GL_BLEND);
@@ -1121,9 +1107,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 }
 
-#include "./src/fontworks.cpp" // Ensure the refactored version is used
-
-
 // Enumeration to define the game states
 enum GameState {
     MenuPrincipal,
@@ -1209,19 +1192,19 @@ private:
         for (size_t i = 0; i < title.size(); ++i) {
             float letterX = titleX + i * 120.0f;
             float letterY = (title[i] == 'S') ? titleY - fallingOffset : titleY;
-            renderText(textShader, std::string(1, title[i]), letterX, letterY, size, colors[i]);
+            textShader.renderText(std::string(1, title[i]), letterX, letterY, size, colors[i]);
 
             if (title[i] == 'S') {
                 fallingOffset = (fallingOffset > 100.0f) ? 0.0f : fallingOffset + 0.5f;
             }
         }
-        renderText(textShader, "3D", titleX + 270.0f, titleY - 190.0f, size, glm::vec3(1.0f, 1.0f, 1.0f));
+        textShader.renderText("3D", titleX + 270.0f, titleY - 190.0f, size, glm::vec3(1.0f, 1.0f, 1.0f));
     }
 
     void drawFooter(float windowWidth) {
         float footerX = (windowWidth / 2) - 180.0f;
         float footerY = 20.0f;
-        renderText(textShader, "Copyright: Nicolas LOPEZ and Nicolas RINCON", footerX, footerY, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f));
+        textShader.renderText("Copyright: Nicolas LOPEZ and Nicolas RINCON", footerX, footerY, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f));
     }
 
     bool isMouseOverButton(double mouseX, double mouseY, float buttonX, float buttonY, float buttonWidth, float buttonHeight) {
@@ -1240,7 +1223,7 @@ private:
         glm::vec3 finalTextColor = isHovered ? glm::vec3(1.0f, 0.8f, 0.0f) : textColor;
         float textX = x + (width / 2) - (text.size() * 10.0f) / 2;
         float textY = y + height+(height/2);
-        renderText(textShader, text, textX, textY, 1.0f, finalTextColor);
+        textShader.renderText(text, textX, textY, 1.0f, finalTextColor);
     }
 };
 
@@ -1282,8 +1265,8 @@ private:
     void drawInstructions(float windowWidth, float windowHeight, bool returnHovered) {
         float introX = windowWidth / 2 - 200.0f;
         float introY = windowHeight - 100.0f;
-        renderText(textShader, "Welcome to Tetris 3D!", introX, introY, 0.9f, glm::vec3(1.0f, 1.0f, 1.0f));
-        renderText(textShader, "Use the following keys to play the game:", introX, introY - 30.0f, 0.7f, glm::vec3(1.0f, 1.0f, 1.0f));
+        textShader.renderText("Welcome to Tetris 3D!", introX, introY, 0.9f, glm::vec3(1.0f, 1.0f, 1.0f));
+        textShader.renderText("Use the following keys to play the game:", introX, introY - 30.0f, 0.7f, glm::vec3(1.0f, 1.0f, 1.0f));
 
         std::vector<std::pair<std::string, std::vector<std::string>>> groupedInstructions = {
             {"Movement Controls:", {
@@ -1306,11 +1289,11 @@ private:
         float lineSpacing = 30.0f;
 
         for (const auto& group : groupedInstructions) {
-            renderText(textShader, group.first, x, y, 0.7f, glm::vec3(1.0f, 1.0f, 0.0f));
+            textShader.renderText(group.first, x, y, 0.7f, glm::vec3(1.0f, 1.0f, 0.0f));
             y -= groupSpacing;
 
             for (const auto& instruction : group.second) {
-                renderText(textShader, instruction, x + 20.0f, y, 0.6f, glm::vec3(1.0f, 1.0f, 1.0f));
+                textShader.renderText(instruction, x + 20.0f, y, 0.6f, glm::vec3(1.0f, 1.0f, 1.0f));
                 y -= lineSpacing;
             }
 
@@ -1320,7 +1303,7 @@ private:
         float buttonX = windowWidth / 2 - 100.0f;
         float buttonY = 50.0f;
         glm::vec3 buttonColor = returnHovered ? glm::vec3(1.0f, 0.8f, 0.0f) : glm::vec3(1.0f, 1.0f, 0.0f);
-        renderText(textShader, "RETURN TO MENU", buttonX, buttonY, 0.8f, buttonColor);
+        textShader.renderText("RETURN TO MENU", buttonX, buttonY, 0.8f, buttonColor);
     }
 
     bool isMouseOverButton(double mouseX, double mouseY, float buttonX, float buttonY, float buttonWidth, float buttonHeight) {
