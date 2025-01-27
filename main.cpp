@@ -1112,6 +1112,8 @@ int main() {
                 displayMenu(window, state);
                 break;
             case Playing:
+                glfwSetWindowUserPointer(window,&game);
+                glfwSetKeyCallback(window,key_callback);
                 game.run(); // Start the game
                 state = GameOver; // Temporary, for when the game ends
                 break;
