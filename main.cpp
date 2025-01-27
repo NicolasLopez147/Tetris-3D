@@ -506,6 +506,12 @@ public:
         move(glm::vec3 (pos.x, pos.y, pos.z)); // Adjust blocks to the initial position
     }
 
+    Tetromino(const Vector3D& pos, int shape, const Vector3D& col) : color(col) , rotation(glm::mat4(1.0f)) {
+        setShape(shape);
+        calculateCenter();
+        move(glm::vec3 (pos.x, pos.y, pos.z)); // Adjust blocks to the initial position
+    }
+
     // Overloaded assignment operator
     Tetromino& operator=(const Tetromino& other) {
         if (this != &other) {
@@ -576,6 +582,10 @@ public:
         for (auto& block : blocks) {
             block.setPosition(block.getPosition() + direction);
         }
+    }
+
+    Vector3D getColor(){
+        return color;
     }
 
     // Rotates the Tetromino around a specified axis by a given angle
@@ -761,9 +771,10 @@ class Render{
     std::vector<Block> blocks;
     std::vector<Block> activeTetrominoBlocks;
     std::vector<Block> nextTetrominoBlocks;
+    std::vector<Block> projectedTetrominoBlocks;
     public:
         Render(): shader() {
-            textShader.initializeFont("Super_cartoon.ttf");
+            textShader.initializeFont("src/Super_cartoon.ttf");
         }
 
         void addBlock(const Block& block){
@@ -781,6 +792,13 @@ class Render{
             nextTetrominoBlocks.clear();
             for (const Block& block : tetromino.getBlocks()){
                 nextTetrominoBlocks.push_back(block);
+            }
+        }
+
+        void setProjectedTetromino(const Tetromino& tetromino){
+            projectedTetrominoBlocks.clear();
+            for (const Block& block : tetromino.getBlocks()){
+                projectedTetrominoBlocks.push_back(block);
             }
         }
 
@@ -839,6 +857,10 @@ class Render{
             for (Block& block : nextTetrominoBlocks){
                 block.draw(shader);
             }
+
+            for (Block& block : projectedTetrominoBlocks){
+                block.draw(shader);
+            }
         }
 };
 
@@ -869,11 +891,10 @@ class Game{
         const float INITIAL_FALL_SPEED = 0.8f;
 
         int setShape(){
-            // std::random_device rd;
-            // std::mt19937 gen(rd());
-            // std::uniform_int_distribution<> dist(0, 6);
-            // return dist(gen);
-            return 3;
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<> dist(0, 6);
+            return dist(gen);
         }
 
         void checkPositionTetromino(Tetromino& tetromino){
@@ -897,6 +918,18 @@ class Game{
             }
         }
 
+        Tetromino calculateProjection(const Tetromino& tetromino){
+            Tetromino projectedTetromino = tetromino;
+
+            while (!grid.checkCollision(projectedTetromino)){
+                projectedTetromino.move(glm::vec3(0, -1, 0));
+            }
+
+            projectedTetromino.move(glm::vec3(0, 1, 0));
+
+            return projectedTetromino;
+        }
+
     public:
         Game(GLFWwindow* window): renderer(), window(window) {
             start();
@@ -905,7 +938,7 @@ class Game{
         void start(){
             isRunning = true;
             score = 0;
-            level = 4;
+            level = 0;
             linesCleared = 0;
             linesClearedTotal = 0;
             fallSpeed = INITIAL_FALL_SPEED;
@@ -964,7 +997,7 @@ class Game{
                     }
                     linesClearedTotal += linesCleared;
                     linesCleared = 0;
-                    level = linesClearedTotal ;
+                    level = linesClearedTotal/LINES_PER_LEVEL; ;
 
 
                     renderer.addTetromino(currentTetromino);
@@ -972,7 +1005,7 @@ class Game{
                     renderer.removeClearedBlocks(grid);
 
                     // Set up the next Tetromino
-                    currentTetromino = Tetromino(POSITION_NEW_TETROMINO, nextShape);
+                    currentTetromino = Tetromino(POSITION_NEW_TETROMINO, nextShape,nextTetromino.getColor());
                     checkPositionTetromino(currentTetromino);
                     nextShape = setShape();
                     nextTetromino = Tetromino(POSITION_NEXT_TETROMINO, nextShape);
@@ -986,6 +1019,7 @@ class Game{
 
             renderer.setActiveTetromino(currentTetromino);
             renderer.setNextTetromino(nextTetromino);
+            renderer.setProjectedTetromino(calculateProjection(currentTetromino));
         }
 
         void moveTetromino(const Vector3D& direction){
