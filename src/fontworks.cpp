@@ -44,11 +44,11 @@ void main()
 )";
 
 // Minimal TextShader class
-class TextShader {
+class TextShader1 {
 public:
     GLuint ID;
 
-    TextShader() {
+    TextShader1() {
         // Compile shaders
         GLuint vertex, fragment;
         vertex = glCreateShader(GL_VERTEX_SHADER);
@@ -164,7 +164,7 @@ void initializeFont(const char* fontPath) {
             static_cast<GLuint>(face->glyph->advance.x)
         };
         Characters.insert(std::pair<char, Character>(c, character));
-        std::cout << "[Info] Loaded character: " << c << " with size " << face->glyph->bitmap.width << "x" << face->glyph->bitmap.rows << std::endl;
+        //std::cout << "[Info] Loaded character: " << c << " with size " << face->glyph->bitmap.width << "x" << face->glyph->bitmap.rows << std::endl;
     }
 
     FT_Done_Face(face);
@@ -180,10 +180,11 @@ void initializeFont(const char* fontPath) {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    std::cout << "[Info] Font successfully initialized." << std::endl;
+    //std::cout << "[Info] Font successfully initialized." << std::endl;
 }
 
 void renderText(TextShader &textShader, std::string text, float x, float y, float scale, glm::vec3 color) {
+    initializeFont("./src/Super_cartoon.ttf");
     textShader.use();
     textShader.setVec3("textColor", color);
     glEnable(GL_BLEND);
@@ -221,57 +222,11 @@ void renderText(TextShader &textShader, std::string text, float x, float y, floa
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
-        std::cout << "[Info] Rendering character '" << c << "' at position (" << xpos << ", " << ypos << ")" << std::endl;
+        //std::cout << "[Info] Rendering character '" << c << "' at position (" << xpos << ", " << ypos << ")" << std::endl;
 
         x += (ch.Advance >> 6) * scale;
     }
 
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-int main() {
-    if (!glfwInit()) {
-        std::cerr << "[Error] Failed to initialize GLFW!" << std::endl;
-        return -1;
-    }
-
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Tetris Menu", nullptr, nullptr);
-    if (!window) {
-        std::cerr << "[Error] Failed to create GLFW window!" << std::endl;
-        glfwTerminate();
-        return -1;
-    }
-    glfwMakeContextCurrent(window);
-
-    if (glewInit() != GLEW_OK) {
-        std::cerr << "[Error] Failed to initialize GLEW!" << std::endl;
-        return -1;
-    }
-
-    glViewport(0, 0, 800, 600);
-    glfwSetFramebufferSizeCallback(window, [](GLFWwindow*, int width, int height) {
-        glViewport(0, 0, width, height);
-    });
-
-    TextShader textShader;
-    initializeFont("Super_cartoon.ttf");
-
-    glm::mat4 projection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
-    textShader.use();
-    textShader.setMat4("projection", projection);
-
-    while (!glfwWindowShouldClose(window)) {
-        glClearColor(0.1f, 0.1f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        renderText(textShader, "START", 350.0f, 400.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
-        renderText(textShader, "QUIT", 350.0f, 300.0f, 1.0f, glm::vec3(0.8f, 0.2f, 0.2f));
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
-
-    glfwTerminate();
-    return 0;
 }
