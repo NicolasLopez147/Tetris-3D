@@ -864,7 +864,7 @@ class Menu {
 public:
     Menu(GLFWwindow* window, GameState& state)
         : window(window), state(state), textShader() {
-        projection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
+        projection = glm::ortho(0.0f, 1600.0f, 0.0f, 1200.0f);
     }
 
     void displayMenu() {
@@ -879,8 +879,8 @@ public:
         mouseY = windowHeight - mouseY;
 
         // Calculate button positions
-        float startX = (windowWidth / 2) - 140.0f;
-        float startY = windowHeight / 2;
+        float startX = (windowWidth / 2) - 120.0f;
+        float startY = windowHeight - 600.0f;
         float howToPlayX = startX - 50.0f;
         float howToPlayY = startY - 80.0f;
         float quitX = startX;
@@ -921,9 +921,9 @@ private:
     const float buttonWidth = 200.0f, buttonHeight = 50.0f;
 
     void drawTitle(float windowWidth, float windowHeight) {
-        float size = 1.5f;
-        float titleX = (windowWidth / 2) - 120.0f;
-        float titleY = windowHeight - 100.0f;
+        float size = 3.5f;
+        float titleX = (windowWidth / 2) - 350.0f;
+        float titleY = windowHeight - 120.0f;
         std::vector<glm::vec3> colors = {
             glm::vec3(1.0f, 0.0f, 0.0f),
             glm::vec3(1.0f, 0.5f, 0.0f),
@@ -935,7 +935,7 @@ private:
 
         std::string title = "TETRIS";
         for (size_t i = 0; i < title.size(); ++i) {
-            float letterX = titleX + i * 40.0f;
+            float letterX = titleX + i * 120.0f;
             float letterY = (title[i] == 'S') ? titleY - fallingOffset : titleY;
             renderText(textShader, std::string(1, title[i]), letterX, letterY, size, colors[i]);
 
@@ -943,7 +943,7 @@ private:
                 fallingOffset = (fallingOffset > 100.0f) ? 0.0f : fallingOffset + 0.5f;
             }
         }
-        renderText(textShader, "3D", titleX + 80.0f, titleY - 60.0f, size, glm::vec3(1.0f, 1.0f, 1.0f));
+        renderText(textShader, "3D", titleX + 270.0f, titleY - 190.0f, size, glm::vec3(1.0f, 1.0f, 1.0f));
     }
 
     void drawFooter(float windowWidth) {
@@ -967,7 +967,7 @@ private:
 
         glm::vec3 finalTextColor = isHovered ? glm::vec3(1.0f, 0.8f, 0.0f) : textColor;
         float textX = x + (width / 2) - (text.size() * 10.0f) / 2;
-        float textY = y + (height / 2) - 10.0f;
+        float textY = y + height+(height/2);
         renderText(textShader, text, textX, textY, 1.0f, finalTextColor);
     }
 };
@@ -976,7 +976,7 @@ class HowToPlayScreen {
 public:
     HowToPlayScreen(GLFWwindow* window, GameState& state)
         : window(window), state(state), textShader() {
-        projection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
+        projection = glm::ortho(0.0f, 1600.0f, 0.0f, 1200.0f);
         textShader.use();
         textShader.setMat4("projection", projection);
     }
@@ -1010,8 +1010,8 @@ private:
     void drawInstructions(float windowWidth, float windowHeight, bool returnHovered) {
         float introX = windowWidth / 2 - 200.0f;
         float introY = windowHeight - 100.0f;
-        renderText(textShader, "Welcome to Tetris 3D!", introX, introY, 0.8f, glm::vec3(1.0f, 1.0f, 1.0f));
-        renderText(textShader, "Use the following keys to play the game:", introX, introY - 30.0f, 0.5f, glm::vec3(1.0f, 1.0f, 1.0f));
+        renderText(textShader, "Welcome to Tetris 3D!", introX, introY, 0.9f, glm::vec3(1.0f, 1.0f, 1.0f));
+        renderText(textShader, "Use the following keys to play the game:", introX, introY - 30.0f, 0.7f, glm::vec3(1.0f, 1.0f, 1.0f));
 
         std::vector<std::pair<std::string, std::vector<std::string>>> groupedInstructions = {
             {"Movement Controls:", {
@@ -1034,11 +1034,11 @@ private:
         float lineSpacing = 30.0f;
 
         for (const auto& group : groupedInstructions) {
-            renderText(textShader, group.first, x, y, 0.6f, glm::vec3(1.0f, 1.0f, 0.0f));
+            renderText(textShader, group.first, x, y, 0.7f, glm::vec3(1.0f, 1.0f, 0.0f));
             y -= groupSpacing;
 
             for (const auto& instruction : group.second) {
-                renderText(textShader, instruction, x + 20.0f, y, 0.5f, glm::vec3(1.0f, 1.0f, 1.0f));
+                renderText(textShader, instruction, x + 20.0f, y, 0.6f, glm::vec3(1.0f, 1.0f, 1.0f));
                 y -= lineSpacing;
             }
 
@@ -1069,7 +1069,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Tetris 3D", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1600, 1200, "Tetris 3D", nullptr, nullptr);
     if (!window) {
         std::cerr << "Error: Failed to create GLFW window" << std::endl;
         glfwTerminate();
