@@ -854,215 +854,208 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 // Enumeration to define the game states
 enum GameState {
-    Menu,
+    MenuPrincipal,
     Playing,
     HowToPlay,
     GameOver
 };
 
-// Global or static variable to track the falling offset
-float fallingOffset = 0.0f;
+class Menu {
+public:
+    Menu(GLFWwindow* window, GameState& state)
+        : window(window), state(state), textShader() {
+        projection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
+    }
 
-// Function to draw the title with a falling effect for the letter 'S'
-void drawTitle(TextShader& textShader, float windowWidth, float windowHeight) {
-    // Define the position and size for "TETRIS"
-    float size = 1.5f;
-    float titleX = (windowWidth / 2) - 120.0f; // Center the title
-    float titleY = windowHeight - 100.0f;     // Position near the top
-    std::vector<glm::vec3> colors = {
-        glm::vec3(1.0f, 0.0f, 0.0f), // T: Red
-        glm::vec3(1.0f, 0.5f, 0.0f), // E: Orange
-        glm::vec3(1.0f, 1.0f, 0.0f), // T: Yellow
-        glm::vec3(0.0f, 1.0f, 0.0f), // R: Green
-        glm::vec3(0.0f, 1.0f, 1.0f), // I: Cyan color
-        glm::vec3(1.0f, 0.0f, 1.0f)  // S: Magenta (Fuchsia)
-    };
+    void displayMenu() {
+        textShader.use();
+        textShader.setMat4("projection", projection);
 
-    // Render each letter of "TETRIS"
-    std::string title = "TETRIS";
-    for (size_t i = 0; i < title.size(); ++i) {
-        if (title[i] == 'S') {
-            // Apply falling effect for the letter 'S'
-            float letterX = titleX + i * 40.0f; // Calculate X position
-            float letterY = titleY - fallingOffset; // Apply fallingOffset to Y position
+        int windowWidth, windowHeight;
+        glfwGetWindowSize(window, &windowWidth, &windowHeight);
 
-            // Render the falling 'S'
+        double mouseX, mouseY;
+        glfwGetCursorPos(window, &mouseX, &mouseY);
+        mouseY = windowHeight - mouseY;
+
+        // Calculate button positions
+        float startX = (windowWidth / 2) - 140.0f;
+        float startY = windowHeight / 2;
+        float howToPlayX = startX - 50.0f;
+        float howToPlayY = startY - 80.0f;
+        float quitX = startX;
+        float quitY = howToPlayY - 80.0f;
+
+        // Check hover states
+        bool startHovered = isMouseOverButton(mouseX, mouseY, startX, startY, buttonWidth, buttonHeight);
+        bool howToPlayHovered = isMouseOverButton(mouseX, mouseY, howToPlayX, howToPlayY, buttonWidth, buttonHeight);
+        bool quitHovered = isMouseOverButton(mouseX, mouseY, quitX, quitY, buttonWidth, buttonHeight);
+
+        // Draw elements
+        drawTitle(windowWidth, windowHeight);
+        drawButton(startX, startY, buttonWidth, buttonHeight, "START", glm::vec3(1.0f, 1.0f, 1.0f), startHovered);
+        drawButton(howToPlayX, howToPlayY, buttonWidth, buttonHeight, "HOW TO PLAY", glm::vec3(1.0f, 1.0f, 1.0f), howToPlayHovered);
+        drawButton(quitX, quitY, buttonWidth, buttonHeight, "QUIT", glm::vec3(1.0f, 1.0f, 1.0f), quitHovered);
+        drawFooter(windowWidth);
+
+        // Handle click events
+        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+            if (startHovered) {
+                state = Playing;
+            }
+            if (howToPlayHovered) {
+                state = HowToPlay;
+            }
+            if (quitHovered) {
+                glfwSetWindowShouldClose(window, true);
+            }
+        }
+    }
+
+private:
+    GLFWwindow* window;
+    GameState& state;
+    TextShader textShader;
+    glm::mat4 projection;
+    float fallingOffset = 0.0f;
+    const float buttonWidth = 200.0f, buttonHeight = 50.0f;
+
+    void drawTitle(float windowWidth, float windowHeight) {
+        float size = 1.5f;
+        float titleX = (windowWidth / 2) - 120.0f;
+        float titleY = windowHeight - 100.0f;
+        std::vector<glm::vec3> colors = {
+            glm::vec3(1.0f, 0.0f, 0.0f),
+            glm::vec3(1.0f, 0.5f, 0.0f),
+            glm::vec3(1.0f, 1.0f, 0.0f),
+            glm::vec3(0.0f, 1.0f, 0.0f),
+            glm::vec3(0.0f, 1.0f, 1.0f),
+            glm::vec3(1.0f, 0.0f, 1.0f)
+        };
+
+        std::string title = "TETRIS";
+        for (size_t i = 0; i < title.size(); ++i) {
+            float letterX = titleX + i * 40.0f;
+            float letterY = (title[i] == 'S') ? titleY - fallingOffset : titleY;
             renderText(textShader, std::string(1, title[i]), letterX, letterY, size, colors[i]);
 
-            // Reset or loop the falling effect
-            if (fallingOffset > 100.0f) { // If it falls beyond a threshold
-                fallingOffset = 0.0f;     // Reset to the starting position
-            } else {
-                fallingOffset += 0.5f;    // Increment the offset (controls speed)
+            if (title[i] == 'S') {
+                fallingOffset = (fallingOffset > 100.0f) ? 0.0f : fallingOffset + 0.5f;
             }
-        } else {
-            // Render other letters without animation
-            renderText(textShader, std::string(1, title[i]), titleX + i * 40.0f, titleY, size, colors[i]);
+        }
+        renderText(textShader, "3D", titleX + 80.0f, titleY - 60.0f, size, glm::vec3(1.0f, 1.0f, 1.0f));
+    }
+
+    void drawFooter(float windowWidth) {
+        float footerX = (windowWidth / 2) - 180.0f;
+        float footerY = 20.0f;
+        renderText(textShader, "Copyright: Nicolas LOPEZ and Nicolas RINCON", footerX, footerY, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f));
+    }
+
+    bool isMouseOverButton(double mouseX, double mouseY, float buttonX, float buttonY, float buttonWidth, float buttonHeight) {
+        return mouseX >= buttonX && mouseX <= buttonX + buttonWidth && mouseY >= buttonY && mouseY <= buttonY + buttonHeight;
+    }
+
+    void drawButton(float x, float y, float width, float height, const std::string& text, glm::vec3 textColor, bool isHovered) {
+        glBegin(GL_QUADS);
+        glColor3f(0.2f, 0.2f, 0.2f);
+        glVertex2f(x, y);
+        glVertex2f(x + width, y);
+        glVertex2f(x + width, y + height);
+        glVertex2f(x, y + height);
+        glEnd();
+
+        glm::vec3 finalTextColor = isHovered ? glm::vec3(1.0f, 0.8f, 0.0f) : textColor;
+        float textX = x + (width / 2) - (text.size() * 10.0f) / 2;
+        float textY = y + (height / 2) - 10.0f;
+        renderText(textShader, text, textX, textY, 1.0f, finalTextColor);
+    }
+};
+
+class HowToPlayScreen {
+public:
+    HowToPlayScreen(GLFWwindow* window, GameState& state)
+        : window(window), state(state), textShader() {
+        projection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
+        textShader.use();
+        textShader.setMat4("projection", projection);
+    }
+
+    void display() {
+        int windowWidth, windowHeight;
+        glfwGetWindowSize(window, &windowWidth, &windowHeight);
+
+        double mouseX, mouseY;
+        glfwGetCursorPos(window, &mouseX, &mouseY);
+        mouseY = windowHeight - mouseY; // Adjust for OpenGL coordinates
+
+        // Check hover state for the "RETURN TO MENU" button
+        bool returnHovered = isMouseOverButton(mouseX, mouseY, windowWidth / 2 - 100.0f, 50.0f, 200.0f, 50.0f);
+
+        // Draw instructions
+        drawInstructions(windowWidth, windowHeight, returnHovered);
+
+        // Handle click on "RETURN TO MENU"
+        if (returnHovered && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+            state = MenuPrincipal; // Transition to the main menu
         }
     }
 
-    // Render "3D" below "TETRIS" in bold white color
-    renderText(textShader, "3D", titleX + 80.0f, titleY - 60.0f, size, glm::vec3(1.0f, 1.0f, 1.0f));
-}
-
-
-// Function to draw the footer
-void drawFooter(TextShader& textShader, float windowWidth) {
-    float footerX = (windowWidth / 2) - 180.0f; // Centered horizontally
-    float footerY = 20.0f;                     // Position near the bottom
-    renderText(textShader, "Copyright: Nicolas LOPEZ and Nicolas RINCON", footerX, footerY, 0.4f, glm::vec3(1.0f, 1.0f, 1.0f)); // White color
-}
-
-
-// Function to check if a mouse click is within a button's boundaries
-bool isMouseOverButton(double mouseX, double mouseY, float buttonX, float buttonY, float buttonWidth, float buttonHeight) {
-    return mouseX >= buttonX && mouseX <= buttonX + buttonWidth && mouseY >= buttonY && mouseY <= buttonY + buttonHeight;
-}
-
-// Function to draw a button with hover effect
-void drawButton(TextShader& textShader, float x, float y, float width, float height, const std::string& text, glm::vec3 textColor, bool isHovered) {
-    // Draw the button rectangle (background)
-    glBegin(GL_QUADS);
-    glColor3f(0.2f, 0.2f, 0.2f); // Button background color
-    glVertex2f(x, y);                // Bottom-left
-    glVertex2f(x + width, y);        // Bottom-right
-    glVertex2f(x + width, y + height); // Top-right
-    glVertex2f(x, y + height);       // Top-left
-    glEnd();
-
-    // Change text color if hovered
-    glm::vec3 finalTextColor = isHovered ? glm::vec3(1.0f, 0.8f, 0.0f) : textColor; // Hover color is orange
-    float textX = x + (width / 2) - (text.size() * 10.0f) / 2; // Center horizontally
-    float textY = y + (height / 2) - 10.0f; // Center vertically
-    renderText(textShader, text, textX, textY, 1.0f, finalTextColor);
-}
-
-void drawInstructions(TextShader& textShader, float windowWidth, float windowHeight, bool returnHovered) {
-    // Intro message
-    float introX = windowWidth / 2 - 200.0f;
-    float introY = windowHeight - 100.0f;
-    renderText(textShader, "Welcome to Tetris 3D!", introX, introY, 0.8f, glm::vec3(1.0f, 1.0f, 1.0f));
-    renderText(textShader, "Use the following keys to play the game:", introX, introY - 30.0f, 0.5f, glm::vec3(1.0f, 1.0f, 1.0f));
-
-    // Instructions grouped by type
-    std::vector<std::pair<std::string, std::vector<std::string>>> groupedInstructions = {
-        {"Movement Controls:", {
-            "Key S: Move down",
-            "Key A: Move left X-axis",
-            "Key D: Move right X-axis",
-            "Key Q: Move left Z-axis",
-            "Key E: Rotate right Z-axis",
-        }},
-        {"Rotation Controls:", {
-            "Key Z: Rotate around Z-axis",
-            "Key X: Rotate around X-axis",
-            "Key C: Rotate around Y-axis"
-        }}
-    };
-
-    // Display the instructions
-    float x = windowWidth / 2 - 200.0f; // Left-align the instructions
-    float y = introY - 80.0f;           // Start below the intro message
-    float groupSpacing = 35.0f;         // Spacing between groups
-    float lineSpacing = 30.0f;          // Spacing between lines
-
-    for (const auto& group : groupedInstructions) {
-        // Render the group title
-        renderText(textShader, group.first, x, y, 0.6f, glm::vec3(1.0f, 1.0f, 0.0f)); // Yellow for titles
-        y -= groupSpacing;
-
-        // Render each instruction in the group
-        for (const auto& instruction : group.second) {
-            renderText(textShader, instruction, x + 20.0f, y, 0.5f, glm::vec3(1.0f, 1.0f, 1.0f)); // Indent slightly
-            y -= lineSpacing;
-        }
-
-        y -= groupSpacing; // Extra space between groups
-    }
-
-    // RETURN TO MENU button
-    float buttonX = windowWidth / 2 - 100.0f;
-    float buttonY = 50.0f;
-    glm::vec3 buttonColor = returnHovered ? glm::vec3(1.0f, 0.8f, 0.0f) : glm::vec3(1.0f, 1.0f, 0.0f); // Hover effect
-    renderText(textShader, "RETURN TO MENU", buttonX, buttonY, 0.8f, buttonColor);
-}
-
-
-
-// Function to display the "How to Play" screen
-void displayHowToPlay(GLFWwindow* window, GameState &state) {
+private:
+    GLFWwindow* window;
+    GameState& state;
     TextShader textShader;
-    glm::mat4 projection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
-    textShader.use();
-    textShader.setMat4("projection", projection);
+    glm::mat4 projection;
 
-    int windowWidth, windowHeight;
-    glfwGetWindowSize(window, &windowWidth, &windowHeight);
+    void drawInstructions(float windowWidth, float windowHeight, bool returnHovered) {
+        float introX = windowWidth / 2 - 200.0f;
+        float introY = windowHeight - 100.0f;
+        renderText(textShader, "Welcome to Tetris 3D!", introX, introY, 0.8f, glm::vec3(1.0f, 1.0f, 1.0f));
+        renderText(textShader, "Use the following keys to play the game:", introX, introY - 30.0f, 0.5f, glm::vec3(1.0f, 1.0f, 1.0f));
 
-    double mouseX, mouseY;
-    glfwGetCursorPos(window, &mouseX, &mouseY);
-    mouseY = windowHeight - mouseY;
+        std::vector<std::pair<std::string, std::vector<std::string>>> groupedInstructions = {
+            {"Movement Controls:", {
+                "Key S: Move down",
+                "Key A: Move left X-axis",
+                "Key D: Move right X-axis",
+                "Key Q: Move left Z-axis",
+                "Key E: Rotate right Z-axis",
+            }},
+            {"Rotation Controls:", {
+                "Key Z: Rotate around Z-axis",
+                "Key X: Rotate around X-axis",
+                "Key C: Rotate around Y-axis"
+            }}
+        };
 
-    // Hover state for "RETURN TO MENU"
-    bool returnHovered = isMouseOverButton(mouseX, mouseY, windowWidth / 2 - 100.0f, 50.0f, 200.0f, 50.0f);
+        float x = windowWidth / 2 - 200.0f;
+        float y = introY - 80.0f;
+        float groupSpacing = 35.0f;
+        float lineSpacing = 30.0f;
 
-    // Call drawInstructions with the correct arguments
-    drawInstructions(textShader, windowWidth, windowHeight, returnHovered);
+        for (const auto& group : groupedInstructions) {
+            renderText(textShader, group.first, x, y, 0.6f, glm::vec3(1.0f, 1.0f, 0.0f));
+            y -= groupSpacing;
 
-    // Handle click on "RETURN TO MENU"
-    if (returnHovered && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-        state = Menu;
-    }   
-}
+            for (const auto& instruction : group.second) {
+                renderText(textShader, instruction, x + 20.0f, y, 0.5f, glm::vec3(1.0f, 1.0f, 1.0f));
+                y -= lineSpacing;
+            }
 
-// Function to display the menu
-void displayMenu(GLFWwindow* window, GameState &state) {
-    // Initialize a TextShader instance
-    TextShader textShader;
-    glm::mat4 projection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f); // Flip the Y-axis
-    textShader.use();
-    textShader.setMat4("projection", projection);
-
-    int windowWidth, windowHeight;
-    glfwGetWindowSize(window, &windowWidth, &windowHeight);
-
-    float buttonWidth = 200.0f, buttonHeight = 50.0f;
-    float startX = (windowWidth / 2) - 140.0f;
-    float startY = windowHeight / 2 + 0.0f;
-    float howToPlayX = startX - 50.0f;
-    float howToPlayY = startY - 80.0f;
-    float quitX = startX;
-    float quitY = howToPlayY - 80.0f;
-
-    double mouseX, mouseY;
-    glfwGetCursorPos(window, &mouseX, &mouseY);
-    mouseY = windowHeight - mouseY;
-
-    bool startHovered = isMouseOverButton(mouseX, mouseY, startX, startY, buttonWidth, buttonHeight);
-    bool howToPlayHovered = isMouseOverButton(mouseX, mouseY, howToPlayX, howToPlayY, buttonWidth, buttonHeight);
-    bool quitHovered = isMouseOverButton(mouseX, mouseY, quitX, quitY, buttonWidth, buttonHeight);
-
-    drawTitle(textShader, windowWidth, windowHeight);
-    drawButton(textShader, startX, startY, buttonWidth, buttonHeight, "START", glm::vec3(1.0f, 1.0f, 1.0f), startHovered);
-    drawButton(textShader, howToPlayX, howToPlayY, buttonWidth, buttonHeight, "HOW TO PLAY", glm::vec3(1.0f, 1.0f, 1.0f), howToPlayHovered);
-    drawButton(textShader, quitX, quitY, buttonWidth, buttonHeight, "QUIT", glm::vec3(1.0f, 1.0f, 1.0f), quitHovered);
-
-    // Render the footer
-    drawFooter(textShader, windowWidth);
-
-    // Check for mouse clicks
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-        if (startHovered) {
-            state = Playing;
+            y -= groupSpacing;
         }
-        if (howToPlayHovered) {
-            state = HowToPlay;
-        }
-        if (quitHovered) {
-            glfwSetWindowShouldClose(window, true);
-        }
+
+        float buttonX = windowWidth / 2 - 100.0f;
+        float buttonY = 50.0f;
+        glm::vec3 buttonColor = returnHovered ? glm::vec3(1.0f, 0.8f, 0.0f) : glm::vec3(1.0f, 1.0f, 0.0f);
+        renderText(textShader, "RETURN TO MENU", buttonX, buttonY, 0.8f, buttonColor);
     }
-}
+
+    bool isMouseOverButton(double mouseX, double mouseY, float buttonX, float buttonY, float buttonWidth, float buttonHeight) {
+        return mouseX >= buttonX && mouseX <= buttonX + buttonWidth && mouseY >= buttonY && mouseY <= buttonY + buttonHeight;
+    }
+};
+
 
 int main() {
     // Initialize GLFW
@@ -1100,16 +1093,18 @@ int main() {
     glEnable(GL_DEPTH_TEST);
 
     // Set the initial game state
-    GameState state = Menu;
+    GameState state = MenuPrincipal;
     Game game(window);
+    Menu menu(window, state);
+    HowToPlayScreen howToPlayScreen(window, state);
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         switch (state) {
-            case Menu:
-                displayMenu(window, state);
+            case MenuPrincipal:
+                menu.displayMenu(); // display the menu
                 break;
             case Playing:
                 glfwSetWindowUserPointer(window,&game);
@@ -1118,7 +1113,7 @@ int main() {
                 state = GameOver; // Temporary, for when the game ends
                 break;
             case HowToPlay:
-                displayHowToPlay(window, state);
+                howToPlayScreen.display();
                 break;
             case GameOver:
                 // Implement a game over screen or restart logic if needed
