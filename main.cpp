@@ -856,6 +856,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 enum GameState {
     Menu,
     Playing,
+    HowToPlay,
     GameOver
 };
 
@@ -936,6 +937,84 @@ void drawButton(TextShader& textShader, float x, float y, float width, float hei
     renderText(textShader, text, textX, textY, 1.0f, finalTextColor);
 }
 
+void drawInstructions(TextShader& textShader, float windowWidth, float windowHeight, bool returnHovered) {
+    // Intro message
+    float introX = windowWidth / 2 - 200.0f;
+    float introY = windowHeight - 100.0f;
+    renderText(textShader, "Welcome to Tetris 3D!", introX, introY, 0.8f, glm::vec3(1.0f, 1.0f, 1.0f));
+    renderText(textShader, "Use the following keys to play the game:", introX, introY - 30.0f, 0.5f, glm::vec3(1.0f, 1.0f, 1.0f));
+
+    // Instructions grouped by type
+    std::vector<std::pair<std::string, std::vector<std::string>>> groupedInstructions = {
+        {"Movement Controls:", {
+            "Key S: Move down",
+            "Key A: Move left X-axis",
+            "Key D: Move right X-axis",
+            "Key Q: Move left Z-axis",
+            "Key E: Rotate right Z-axis",
+        }},
+        {"Rotation Controls:", {
+            "Key Z: Rotate around Z-axis",
+            "Key X: Rotate around X-axis",
+            "Key C: Rotate around Y-axis"
+        }}
+    };
+
+    // Display the instructions
+    float x = windowWidth / 2 - 200.0f; // Left-align the instructions
+    float y = introY - 80.0f;           // Start below the intro message
+    float groupSpacing = 35.0f;         // Spacing between groups
+    float lineSpacing = 30.0f;          // Spacing between lines
+
+    for (const auto& group : groupedInstructions) {
+        // Render the group title
+        renderText(textShader, group.first, x, y, 0.6f, glm::vec3(1.0f, 1.0f, 0.0f)); // Yellow for titles
+        y -= groupSpacing;
+
+        // Render each instruction in the group
+        for (const auto& instruction : group.second) {
+            renderText(textShader, instruction, x + 20.0f, y, 0.5f, glm::vec3(1.0f, 1.0f, 1.0f)); // Indent slightly
+            y -= lineSpacing;
+        }
+
+        y -= groupSpacing; // Extra space between groups
+    }
+
+    // RETURN TO MENU button
+    float buttonX = windowWidth / 2 - 100.0f;
+    float buttonY = 50.0f;
+    glm::vec3 buttonColor = returnHovered ? glm::vec3(1.0f, 0.8f, 0.0f) : glm::vec3(1.0f, 1.0f, 0.0f); // Hover effect
+    renderText(textShader, "RETURN TO MENU", buttonX, buttonY, 0.8f, buttonColor);
+}
+
+
+
+// Function to display the "How to Play" screen
+void displayHowToPlay(GLFWwindow* window, GameState &state) {
+    TextShader textShader;
+    glm::mat4 projection = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
+    textShader.use();
+    textShader.setMat4("projection", projection);
+
+    int windowWidth, windowHeight;
+    glfwGetWindowSize(window, &windowWidth, &windowHeight);
+
+    double mouseX, mouseY;
+    glfwGetCursorPos(window, &mouseX, &mouseY);
+    mouseY = windowHeight - mouseY;
+
+    // Hover state for "RETURN TO MENU"
+    bool returnHovered = isMouseOverButton(mouseX, mouseY, windowWidth / 2 - 100.0f, 50.0f, 200.0f, 50.0f);
+
+    // Call drawInstructions with the correct arguments
+    drawInstructions(textShader, windowWidth, windowHeight, returnHovered);
+
+    // Handle click on "RETURN TO MENU"
+    if (returnHovered && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+        state = Menu;
+    }   
+}
+
 // Function to display the menu
 void displayMenu(GLFWwindow* window, GameState &state) {
     // Initialize a TextShader instance
@@ -944,30 +1023,28 @@ void displayMenu(GLFWwindow* window, GameState &state) {
     textShader.use();
     textShader.setMat4("projection", projection);
 
-    // Get window dimensions dynamically
     int windowWidth, windowHeight;
     glfwGetWindowSize(window, &windowWidth, &windowHeight);
 
-    // Button properties (centered)
     float buttonWidth = 200.0f, buttonHeight = 50.0f;
-    float startX = (windowWidth / 2) - 120.0f;
-    float startY = windowHeight / 2 - 50.0f;  // "START" button
-    float quitX = startX;                     // Same X as "START"
-    float quitY = startY - 80.0f;             // "QUIT" button below "START"
+    float startX = (windowWidth / 2) - 140.0f;
+    float startY = windowHeight / 2 + 0.0f;
+    float howToPlayX = startX - 50.0f;
+    float howToPlayY = startY - 80.0f;
+    float quitX = startX;
+    float quitY = howToPlayY - 80.0f;
 
     double mouseX, mouseY;
     glfwGetCursorPos(window, &mouseX, &mouseY);
-    mouseY = windowHeight - mouseY; // Flip Y-axis to align with OpenGL
+    mouseY = windowHeight - mouseY;
 
-    // Check hover state for each button
     bool startHovered = isMouseOverButton(mouseX, mouseY, startX, startY, buttonWidth, buttonHeight);
+    bool howToPlayHovered = isMouseOverButton(mouseX, mouseY, howToPlayX, howToPlayY, buttonWidth, buttonHeight);
     bool quitHovered = isMouseOverButton(mouseX, mouseY, quitX, quitY, buttonWidth, buttonHeight);
 
-    // Render the title
     drawTitle(textShader, windowWidth, windowHeight);
-
-    // Render menu buttons with hover effect
     drawButton(textShader, startX, startY, buttonWidth, buttonHeight, "START", glm::vec3(1.0f, 1.0f, 1.0f), startHovered);
+    drawButton(textShader, howToPlayX, howToPlayY, buttonWidth, buttonHeight, "HOW TO PLAY", glm::vec3(1.0f, 1.0f, 1.0f), howToPlayHovered);
     drawButton(textShader, quitX, quitY, buttonWidth, buttonHeight, "QUIT", glm::vec3(1.0f, 1.0f, 1.0f), quitHovered);
 
     // Render the footer
@@ -976,10 +1053,13 @@ void displayMenu(GLFWwindow* window, GameState &state) {
     // Check for mouse clicks
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
         if (startHovered) {
-            state = Playing; // Transition to the Playing state
+            state = Playing;
+        }
+        if (howToPlayHovered) {
+            state = HowToPlay;
         }
         if (quitHovered) {
-            glfwSetWindowShouldClose(window, true); // Close the window
+            glfwSetWindowShouldClose(window, true);
         }
     }
 }
@@ -1034,6 +1114,9 @@ int main() {
             case Playing:
                 game.run(); // Start the game
                 state = GameOver; // Temporary, for when the game ends
+                break;
+            case HowToPlay:
+                displayHowToPlay(window, state);
                 break;
             case GameOver:
                 // Implement a game over screen or restart logic if needed
