@@ -16,6 +16,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
+
 class Block{
     private:
         glm::vec3 positionVector3D;
@@ -546,8 +547,6 @@ class Render{
 
 class Game{
     private:
-        // GLFWwindow* window;
-        // Render renderer;
 
         Grid grid;
         Tetromino currentTetromino;
@@ -627,35 +626,8 @@ class Game{
             currentTetromino = Tetromino(POSITION_NEW_TETROMINO, setShape());
             checkPositionTetromino(currentTetromino);
             nextTetromino = Tetromino(POSITION_NEXT_TETROMINO, nextShape);
-            // renderer.setGrille(WIDTH, HEIGHT, DEPTH);
         }
 
-        // void run() {
-        //     glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)1600 / 1200, 0.1f, 100.0f);
-        //     glm::mat4 view = glm::lookAt(glm::vec3(15, 25, 15), glm::vec3(5, 10, 5), glm::vec3(0, 1, 0));
-
-        //     while (!glfwWindowShouldClose(window) && isRunning) {
-        //         // Clear the screen
-        //         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        //         glEnable(GL_DEPTH_TEST);
-
-        //         if (isRunning) {
-        //             update(0.005f);
-        //             renderer.render(projection, view,score, level);
-        //         }
-
-                
-                
-
-        //         // Intercambiar buffers y procesar eventos
-        //         glfwSwapBuffers(window);
-        //         glfwPollEvents();
-        //     }
-
-        //     // Ensure OpenGL state is reset
-        //     glDisable(GL_DEPTH_TEST);
-        //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // }
 
         void update(float deltaTime) {
             static float accumulatedTime = 0.0f;
@@ -685,11 +657,6 @@ class Game{
                     linesCleared = 0;
                     level = linesClearedTotal/LINES_PER_LEVEL; ;
 
-
-                    // renderer.addTetromino(currentTetromino);
-
-                    // renderer.removeClearedBlocks(grid);
-
                     // Set up the next Tetromino
                     currentTetromino = Tetromino(POSITION_NEW_TETROMINO, nextShape,nextTetromino.getColor());
                     checkPositionTetromino(currentTetromino);
@@ -702,10 +669,6 @@ class Game{
 
                 accumulatedTime = 0.0f;
             }
-
-            // renderer.setActiveTetromino(currentTetromino);
-            // renderer.setNextTetromino(nextTetromino);
-            // renderer.setProjectedTetromino(calculateProjection(currentTetromino));
         }
 
         Tetromino getProjectedTetromino(const Tetromino& tetromino) const {
@@ -766,7 +729,6 @@ class Game{
     public:
         ~Game(){
             grid.cleanUp();
-            // renderer.cleanUp();
         }
 };
 
@@ -902,6 +864,7 @@ class Renderer {
 
         void renderText(const std::string& text, float x, float y, float scale, glm::vec3 color) {
             textShader.use();
+            textShader.setMat4("projection", glm::ortho(0.0f, 1600.0f, 0.0f, 1200.0f));
             textShader.setVec3("textColor", color);
             textShader.renderText(text, x, y, scale, color);
         }
