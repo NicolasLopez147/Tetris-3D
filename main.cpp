@@ -16,45 +16,10 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-class Vector3D {
-public:
-    // Public member variables representing the 3D coordinates
-    float x, y, z;
-
-    // Constructor: Initializes the vector with default or given coordinates
-    Vector3D(float x = 0, float y = 0, float z = 0) : x(x), y(y), z(z) {}
-
-    // Overloaded operator+ to add two vectors component-wise
-    Vector3D operator+(const Vector3D& other) const {
-        return Vector3D(x + other.x, y + other.y, z + other.z);
-    }
-
-    // Overloaded operator- to subtract two vectors component-wise
-    Vector3D operator-(const Vector3D& other) const {
-        return Vector3D(x - other.x, y - other.y, z - other.z);
-    }
-
-    // Overloaded operator/ to divide the vector components by a scalar
-    Vector3D operator/(float scalar) const {
-        return Vector3D(x / scalar, y / scalar, z / scalar);
-    }
-
-    // Overloaded operator* to multiply the vector components by a scalar
-    Vector3D operator*(float scalar) const {
-        return Vector3D(x * scalar, y * scalar, z * scalar);
-    }
-
-    // Overloaded operator== to compare two vectors for equality
-    bool operator==(const Vector3D& other) {
-        return x == other.x && y == other.y && z == other.z;
-    }
-};
-
-
 class Block{
     private:
-        Vector3D positionVector3D;
-        Vector3D colorVector3D;
+        glm::vec3 positionVector3D;
+        glm::vec3 colorVector3D;
         glm::vec3 position;
         glm::vec3 color;
         GLuint sharedVAO, sharedVBO, sharedEBO;
@@ -93,7 +58,7 @@ class Block{
         };
 
     public:
-        Block(const Vector3D& positionVector3D, const Vector3D& colorVector3D): positionVector3D(positionVector3D), colorVector3D(colorVector3D), sharedVAO(0), sharedVBO(0), sharedEBO(0) {
+        Block(const glm::vec3& positionVector3D, const glm::vec3& colorVector3D): positionVector3D(positionVector3D), colorVector3D(colorVector3D), sharedVAO(0), sharedVBO(0), sharedEBO(0) {
             position = glm::vec3(positionVector3D.x, positionVector3D.y, positionVector3D.z);
             color = glm::vec3(colorVector3D.x, colorVector3D.y, colorVector3D.z);
 
@@ -158,7 +123,7 @@ private:
     std::vector<Block> blocks;
 
     // Color of the Tetromino, applied to all its blocks
-    Vector3D color;
+    glm::vec3 color;
 
     glm::vec3 center;
 
@@ -170,11 +135,11 @@ private:
     const int rand_max = 255;
 
     // Generates a random color for the Tetromino
-    Vector3D randomColor() {
+    glm::vec3 randomColor() {
         float r = static_cast<float>(rand()) / RAND_MAX; // Generate red component
         float g = static_cast<float>(rand()) / RAND_MAX; // Generate green component
         float b = static_cast<float>(rand()) / RAND_MAX; // Generate blue component
-        return Vector3D(r, g, b);
+        return glm::vec3(r, g, b);
     }
 
     void calculateCenter() {
@@ -194,13 +159,13 @@ private:
 public:
     Tetromino() {}
     // Constructor: Initializes the Tetromino at a position with a specific shape
-    Tetromino(const Vector3D& pos, int shape) : color(randomColor()) , rotation(glm::mat4(1.0f)) {
+    Tetromino(const glm::vec3& pos, int shape) : color(randomColor()) , rotation(glm::mat4(1.0f)) {
         setShape(shape);
         calculateCenter();
         move(glm::vec3 (pos.x, pos.y, pos.z)); // Adjust blocks to the initial position
     }
 
-    Tetromino(const Vector3D& pos, int shape, const Vector3D& col) : color(col) , rotation(glm::mat4(1.0f)) {
+    Tetromino(const glm::vec3& pos, int shape, const glm::vec3& col) : color(col) , rotation(glm::mat4(1.0f)) {
         setShape(shape);
         calculateCenter();
         move(glm::vec3 (pos.x, pos.y, pos.z)); // Adjust blocks to the initial position
@@ -225,46 +190,46 @@ public:
         void setShape(int shape) {
         switch (shape) {
         case 0: // I-shape
-            addBlock(Block(Vector3D(0, 0, 0), color));
-            addBlock(Block(Vector3D(1, 0, 0), color));
-            addBlock(Block(Vector3D(2, 0, 0), color));
-            addBlock(Block(Vector3D(3, 0, 0), color));
+            addBlock(Block(glm::vec3(0, 0, 0), color));
+            addBlock(Block(glm::vec3(1, 0, 0), color));
+            addBlock(Block(glm::vec3(2, 0, 0), color));
+            addBlock(Block(glm::vec3(3, 0, 0), color));
             break;
         case 1: // J-shape
-            addBlock(Block(Vector3D(0, 0, 0), color));
-            addBlock(Block(Vector3D(1, 0, 0), color));
-            addBlock(Block(Vector3D(1, 1, 0), color));
-            addBlock(Block(Vector3D(1, 2, 0), color));
+            addBlock(Block(glm::vec3(0, 0, 0), color));
+            addBlock(Block(glm::vec3(1, 0, 0), color));
+            addBlock(Block(glm::vec3(1, 1, 0), color));
+            addBlock(Block(glm::vec3(1, 2, 0), color));
             break;
         case 2: // L-shape
-            addBlock(Block(Vector3D(0, 0, 0), color));
-            addBlock(Block(Vector3D(1, 0, 0), color));
-            addBlock(Block(Vector3D(0, 1, 0), color));
-            addBlock(Block(Vector3D(0, 2, 0), color));
+            addBlock(Block(glm::vec3(0, 0, 0), color));
+            addBlock(Block(glm::vec3(1, 0, 0), color));
+            addBlock(Block(glm::vec3(0, 1, 0), color));
+            addBlock(Block(glm::vec3(0, 2, 0), color));
             break;
         case 3: // O-shape
-            addBlock(Block(Vector3D(0, 0, 0), color));
-            addBlock(Block(Vector3D(1, 0, 0), color));
-            addBlock(Block(Vector3D(0, 1, 0), color));
-            addBlock(Block(Vector3D(1, 1, 0), color));
+            addBlock(Block(glm::vec3(0, 0, 0), color));
+            addBlock(Block(glm::vec3(1, 0, 0), color));
+            addBlock(Block(glm::vec3(0, 1, 0), color));
+            addBlock(Block(glm::vec3(1, 1, 0), color));
             break;
         case 4: // S-shape
-            addBlock(Block(Vector3D(0, 0, 0), color));
-            addBlock(Block(Vector3D(0, 1, 0), color));
-            addBlock(Block(Vector3D(1, 1, 0), color));
-            addBlock(Block(Vector3D(2, 1, 0), color));
+            addBlock(Block(glm::vec3(0, 0, 0), color));
+            addBlock(Block(glm::vec3(0, 1, 0), color));
+            addBlock(Block(glm::vec3(1, 1, 0), color));
+            addBlock(Block(glm::vec3(2, 1, 0), color));
             break;
         case 5: // T-shape
-            addBlock(Block(Vector3D(0, 0, 0), color));
-            addBlock(Block(Vector3D(1, 0, 0), color));
-            addBlock(Block(Vector3D(2, 0, 0), color));
-            addBlock(Block(Vector3D(1, 1, 0), color));
+            addBlock(Block(glm::vec3(0, 0, 0), color));
+            addBlock(Block(glm::vec3(1, 0, 0), color));
+            addBlock(Block(glm::vec3(2, 0, 0), color));
+            addBlock(Block(glm::vec3(1, 1, 0), color));
             break;
         case 6: // Z-shape
-            addBlock(Block(Vector3D(0, 1, 0), color));
-            addBlock(Block(Vector3D(1, 1, 0), color));
-            addBlock(Block(Vector3D(1, 0, 0), color));
-            addBlock(Block(Vector3D(2, 0, 0), color));
+            addBlock(Block(glm::vec3(0, 1, 0), color));
+            addBlock(Block(glm::vec3(1, 1, 0), color));
+            addBlock(Block(glm::vec3(1, 0, 0), color));
+            addBlock(Block(glm::vec3(2, 0, 0), color));
             break;
         default:
             break;
@@ -278,7 +243,7 @@ public:
         }
     }
 
-    Vector3D getColor(){
+    glm::vec3 getColor(){
         return color;
     }
 
@@ -601,8 +566,8 @@ class Game{
 
         const int LINES_PER_LEVEL = 10;
         const float SPEED_INCREMENT = 0.1f;
-        const Vector3D POSITION_NEW_TETROMINO = Vector3D(WIDTH/2, HEIGHT, DEPTH/2);
-        const Vector3D POSITION_NEXT_TETROMINO = Vector3D(WIDTH + 3, HEIGHT/2, 0);
+        const glm::vec3 POSITION_NEW_TETROMINO = glm::vec3(WIDTH/2, HEIGHT, DEPTH/2);
+        const glm::vec3 POSITION_NEXT_TETROMINO = glm::vec3(WIDTH + 3, HEIGHT/2, 0);
         const float INITIAL_FALL_SPEED = 0.8f;
 
         int setShape(){
@@ -747,14 +712,14 @@ class Game{
             return calculateProjection(tetromino);
         }
 
-        void moveTetromino(const Vector3D& direction){
+        void moveTetromino(const glm::vec3& direction){
             currentTetromino.move(glm::vec3(direction.x, direction.y, direction.z));
             if (grid.checkCollision(currentTetromino)){
                 currentTetromino.move(glm::vec3(-direction.x, -direction.y, -direction.z));
             }
         }
 
-        void rotateTetromino(float angle, const Vector3D& axis){
+        void rotateTetromino(float angle, const glm::vec3& axis){
             currentTetromino.rotate(angle, glm::vec3(axis.x, axis.y, axis.z));
             checkPositionTetromino(currentTetromino);
             if (grid.checkCollision(currentTetromino)){
@@ -899,8 +864,9 @@ class Renderer {
                             blockShader.setUniformMatrix4fv("model", model);
 
                             glm::vec3 color = grid.getCellColor(x, y, z); 
-                            
+
                             blockShader.setUniform3f("blockColor", color.x, color.y, color.z);
+                            blockShader.setUniform1i("isGRID", false);
 
                             // Renderizar un cubo en la posición actual
                             glBindVertexArray(cubeVAO); // Asegúrate de usar un VAO compartido o inicializado para cubos
@@ -947,33 +913,33 @@ public:
     void handleInput(int key, Game& game) {
     switch (key) {
     case GLFW_KEY_S: // Move the current Tetromino down
-        game.moveTetromino(Vector3D(0, -1, 0));
+        game.moveTetromino(glm::vec3(0, -1, 0));
         break;
 
     case GLFW_KEY_A: // Move the current Tetromino left
-        game.moveTetromino(Vector3D(-1, 0, 0));
+        game.moveTetromino(glm::vec3(-1, 0, 0));
         break;
 
     case GLFW_KEY_D: // Move the current Tetromino right
-        game.moveTetromino(Vector3D(1, 0, 0));
+        game.moveTetromino(glm::vec3(1, 0, 0));
         break;
     
     case GLFW_KEY_Q: // Move the current Tetromino up
-        game.moveTetromino(Vector3D(0, 0, -1));
+        game.moveTetromino(glm::vec3(0, 0, -1));
         break;
 
     case GLFW_KEY_E: // Rotate the Tetromino 90 degrees around the X-axis
-        game.moveTetromino(Vector3D(0, 0, 1));
+        game.moveTetromino(glm::vec3(0, 0, 1));
         break;
 
     case GLFW_KEY_Z: // Rotate the Tetromino 90 degrees around the Z-axis
-        game.rotateTetromino(90.0f, Vector3D(0, 0, 1));
+        game.rotateTetromino(90.0f, glm::vec3(0, 0, 1));
         break;
     case GLFW_KEY_X: // Rotate the Tetromino 90 degrees around the X-axis
-        game.rotateTetromino(90.0f, Vector3D(1, 0, 0));
+        game.rotateTetromino(90.0f, glm::vec3(1, 0, 0));
         break;
     case GLFW_KEY_C: // Rotate the Tetromino 90 degrees around the Y-axis
-        game.rotateTetromino(90.0f, Vector3D(0, 1, 0));
+        game.rotateTetromino(90.0f, glm::vec3(0, 1, 0));
         break;
     case GLFW_KEY_SPACE: // Restart the game
         game.moveTetrominoToProjectedPosition();
