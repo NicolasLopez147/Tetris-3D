@@ -899,8 +899,7 @@ class Renderer {
                             blockShader.setUniformMatrix4fv("model", model);
 
                             glm::vec3 color = grid.getCellColor(x, y, z); 
-                            std::cout << "Rendering block at (" << x << ", " << y << ", " << z << ") with color: " << color.r << ", " << color.g << ", " << color.b << std::endl;
-
+                            
                             blockShader.setUniform3f("blockColor", color.x, color.y, color.z);
 
                             // Renderizar un cubo en la posición actual
@@ -1241,7 +1240,7 @@ int main() {
     glEnable(GL_DEPTH_TEST);
 
     // Set the initial game state
-    GameState state = Playing;
+    GameState state = MenuPrincipal;
     Game game(4, 16, 4);
     Renderer renderer;
     Menu menu(window, state);
