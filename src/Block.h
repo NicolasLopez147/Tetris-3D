@@ -13,8 +13,6 @@
 
 class Block{
     private:
-        glm::vec3 positionVector3D;
-        glm::vec3 colorVector3D;
         glm::vec3 position;
         glm::vec3 color;
         GLuint sharedVAO, sharedVBO, sharedEBO;
@@ -75,8 +73,8 @@ class Block{
         }
 
     public:
-        Block(const glm::vec3& positionVector3D, const glm::vec3& colorVector3D): positionVector3D(positionVector3D), colorVector3D(colorVector3D), sharedVAO(0), sharedVBO(0), sharedEBO(0) {
-            position = glm::vec3(positionVector3D.x, positionVector3D.y, positionVector3D.z);
+        Block(const glm::vec3& position, const glm::vec3& colorVector3D): position(position), color(color), sharedVAO(0), sharedVBO(0), sharedEBO(0) {
+            // position is already initialized in the initializer list
             color = glm::vec3(colorVector3D.x, colorVector3D.y, colorVector3D.z);
 
             initializeSharedResources();
