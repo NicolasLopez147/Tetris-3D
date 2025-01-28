@@ -83,6 +83,18 @@ public:
 
         glDeleteShader(vertex);
         glDeleteShader(fragment);
+
+
+        initializeFont("./utils/Super_cartoon.ttf");
+    }
+
+    void cleanup() {
+        for (auto& c : Characters) {
+            glDeleteTextures(1, &c.second.TextureID);
+        }
+        glDeleteVertexArrays(1, &VAO);
+        glDeleteBuffers(1, &VBO);
+        glDeleteProgram(ID);
     }
 
     void use() {
@@ -116,6 +128,10 @@ public:
         for (unsigned char c = 0; c < 128; c++) {
             if (FT_Load_Char(face, c, FT_LOAD_RENDER)) {
                 std::cerr << "[Error] Failed to load character: " << c << std::endl;
+                continue;
+            }
+
+            if(Characters.find(c) != Characters.end()){
                 continue;
             }
 
@@ -163,7 +179,6 @@ public:
     }
 
     void renderText(const std::string& text, float x, float y, float scale, glm::vec3 color) {
-        initializeFont("./utils/Super_cartoon.ttf");
         use();
         setVec3("textColor", color);
         glEnable(GL_BLEND);
@@ -208,7 +223,6 @@ public:
         glBindVertexArray(0);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
-
 private:
     void checkCompileErrors(GLuint shader, std::string type) {
         GLint success;
@@ -227,6 +241,10 @@ private:
             }
         }
     }
+    public:
+        ~TextShader(){
+            cleanup();
+        }
 };
 
 
@@ -312,6 +330,10 @@ class Shader{
             return shaderProgram;
         }
 
+        void cleanUp() {
+            glDeleteProgram(ID);
+        }
+
         void use() {
             glUseProgram(ID);
         }
@@ -329,6 +351,10 @@ class Shader{
         void setUniform1i(const std::string& name, int value) const {
             GLuint loc = glGetUniformLocation(ID, name.c_str());
             glUniform1i(loc, value);
+        }
+    public:
+        ~Shader(){
+            cleanUp();
         }
 
 };
@@ -372,11 +398,11 @@ public:
 
 class Block{
     private:
-        GLuint VAO, EBO;
         Vector3D positionVector3D;
         Vector3D colorVector3D;
         glm::vec3 position;
         glm::vec3 color;
+        GLuint sharedVAO, sharedVBO, sharedEBO;
 
         std::vector<float> blockVertices = {
             // Posiciones de los vértices
@@ -412,29 +438,33 @@ class Block{
         };
 
     public:
-        Block(const Vector3D& positionVector3D, const Vector3D& colorVector3D): positionVector3D(positionVector3D), colorVector3D(colorVector3D){
+        Block(const Vector3D& positionVector3D, const Vector3D& colorVector3D): positionVector3D(positionVector3D), colorVector3D(colorVector3D), sharedVAO(0), sharedVBO(0), sharedEBO(0) {
             position = glm::vec3(positionVector3D.x, positionVector3D.y, positionVector3D.z);
             color = glm::vec3(colorVector3D.x, colorVector3D.y, colorVector3D.z);
 
-            GLuint VBO;
+            initializeSharedResources();
+        }
 
-            glGenVertexArrays(1, &VAO);
-            glGenBuffers(1, &VBO);
-            glGenBuffers(1, &EBO);
+        void initializeSharedResources() {
+            if (sharedVAO == 0) { // Solo inicializar una vez
+                glGenVertexArrays(1, &sharedVAO);
+                glGenBuffers(1, &sharedVBO);
+                glGenBuffers(1, &sharedEBO);
 
-            glBindVertexArray(VAO);
+                glBindVertexArray(sharedVAO);
 
-            glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            glBufferData(GL_ARRAY_BUFFER, blockVertices.size() * sizeof(float), blockVertices.data(), GL_STATIC_DRAW);
+                glBindBuffer(GL_ARRAY_BUFFER, sharedVBO);
+                glBufferData(GL_ARRAY_BUFFER, blockVertices.size() * sizeof(float), blockVertices.data(), GL_STATIC_DRAW);
 
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, blockIndices.size() * sizeof(unsigned int), blockIndices.data(), GL_STATIC_DRAW);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sharedEBO);
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, blockIndices.size() * sizeof(unsigned int), blockIndices.data(), GL_STATIC_DRAW);
 
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-            glEnableVertexAttribArray(0);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+                glEnableVertexAttribArray(0);
 
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-            glBindVertexArray(0);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                glBindVertexArray(0);
+            }
         }
 
         void draw(const Shader& shader) const {
@@ -443,7 +473,7 @@ class Block{
 
             glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
             shader.setUniformMatrix4fv("model", model);
-            glBindVertexArray(VAO);
+            glBindVertexArray(sharedVAO);
             glDrawElements(GL_TRIANGLES, blockIndices.size(), GL_UNSIGNED_INT, 0);
             glBindVertexArray(0);
         }
@@ -454,6 +484,12 @@ class Block{
 
         glm::vec3 getPosition() const{
             return position;
+        }
+
+        void cleanUp() {
+            glDeleteVertexArrays(1, &sharedVAO);
+            glDeleteBuffers(1, &sharedVBO);
+            glDeleteBuffers(1, &sharedEBO);
         }
 };
 
@@ -671,6 +707,10 @@ class Grid{
             return false;
         }
 
+        void cleanUp() {
+            glDeleteVertexArrays(1, &VAO);
+        }
+
         // Places the given Tetromino onto the grid and updates the occupied cells and line counters
         void placeTetromino(const Tetromino& tetromino) {
             for (const auto& block : tetromino.getBlocks()) {
@@ -773,7 +813,6 @@ class Render{
     std::vector<Block> projectedTetrominoBlocks;
     public:
         Render(): shader() {
-            textShader.initializeFont("utils/Super_cartoon.ttf");
         }
 
         void addBlock(const Block& block){
@@ -829,7 +868,7 @@ class Render{
         }
 
 
-        void render(const glm::mat4& projection, const glm::mat4& view, int score, int level, int linesCleared) {
+        void render(const glm::mat4& projection, const glm::mat4& view, int score, int level) {
             
             
             glm::mat4 projectionText = glm::ortho(0.0f, 1600.0f, 0.0f, 1200.0f);
@@ -861,6 +900,13 @@ class Render{
                 block.draw(shader);
             }
         }
+    void cleanUp() {
+        grid.cleanUp();
+        for (Block& block : blocks) {
+            block.cleanUp();
+        }
+        shader.cleanUp();
+    }
 };
 
 class Game{
@@ -960,9 +1006,13 @@ class Game{
 
                 if (isRunning) {
                     update(0.005f);
-                    renderer.render(projection, view, score, level, linesClearedTotal);
+                    renderer.render(projection, view,score, level);
                 }
 
+                
+                
+
+                // Intercambiar buffers y procesar eventos
                 glfwSwapBuffers(window);
                 glfwPollEvents();
             }
@@ -1056,6 +1106,11 @@ class Game{
 
         bool checkGameOver(Tetromino currentTetromino) const{
             return grid.checkCollision(currentTetromino);
+        }
+    public:
+        ~Game(){
+            grid.cleanUp();
+            renderer.cleanUp();
         }
 };
 
@@ -1170,6 +1225,7 @@ public:
                 state = HowToPlay;
             }
             if (quitHovered) {
+                textShader.cleanup();
                 glfwSetWindowShouldClose(window, true);
             }
         }
