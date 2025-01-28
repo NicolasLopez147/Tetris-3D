@@ -1,2 +1,5 @@
 main.exe
 Notas
+build/
+.vscode/
+main

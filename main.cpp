@@ -1,87 +1,105 @@
-#include <iostream>
-#include "src\InputHandler.cpp"
-#include <assert.h>
+#include "src/Renderer.h"
+#include "src/InputHandler.h"
+#include "src/Menu.h"
+#include "src/HowToPlayScreen.h"
 
-void test_Vector3D() {
-    Vector3D v1(1, 2, 3);
-    Vector3D v2(2, 3, 4);
+InputHandler inputHandler;
 
-    Vector3D sum = v1 + v2;
-    assert(sum.x == 3 && sum.y == 5 && sum.z == 7);
-
-    Vector3D diff = v1 - v2;
-    assert(diff.x == -1 && diff.y == -1 && diff.z == -1);
-
-    Vector3D div = v1 / 2.0f;
-    assert(div.x == 0.5f && div.y == 1.0f && div.z == 1.5f);
-}
-
-void test_Block() {
-    Block block(Vector3D(1, 2, 3), Vector3D(1, 0, 0));
-    assert(block.getPosition().x == 1 && block.getPosition().y == 2 && block.getPosition().z == 3);
-    block.setPosition(Vector3D(5, 5, 5));
-    assert(block.getPosition().x == 5 && block.getPosition().y == 5 && block.getPosition().z == 5);
-}
-
-void test_TetrominoMovement() {
-    int width = 10;
-    int height = 20;
-    int depth = 10;
-    Tetromino t(Vector3D(width / 2, height - 1, depth / 2),1);
-    assert(!t.getBlocks().empty());
-    t.move(Vector3D(0, -1, 0));
-    assert(!t.getBlocks().empty());
-
-}
-
-void test_Grid() {
-    int width = 10;
-    int height = 20;
-    int depth = 10;
-    Grid grid(width, height, depth);
-    Tetromino t(Vector3D(width / 2, height - 3, depth / 2),1);
-    assert(!grid.checkCollision(t));
-    while(!grid.checkCollision(t)){
-        t.move(Vector3D(-1, 0, 0));
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+        Game* game = reinterpret_cast<Game*>(glfwGetWindowUserPointer(window));
+        if (game) {
+            inputHandler.handleInput(key, *game);
+        }
     }
 }
 
-void test_Game() {
-    InputHandler inputHandler;
-    Game game(10, 20, 1);
-    game.start();
-    assert(game.getIsRunning() == true);
-    char a;
-    while(game.getIsRunning()){
-        std::cin >> a;
-        inputHandler.handleInput(a,game);
-        game.update(1.0f);
-        std::cout << "Lines cleared: " << game.getLinesCleared() << std::endl;
-    }
-    assert(!game.getIsRunning() == true);
+
+// Callback function to adjust the OpenGL viewport when the window is resized
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+    glViewport(0, 0, width, height);
 }
 
 int main() {
+    // Initialize GLFW
+    if (!glfwInit()) {
+        std::cerr << "Error: Failed to initialize GLFW" << std::endl;
+        return -1;
+    }
 
-    // Game game(10, 20, 10);
-    // game.start();
-    // InputHandler inputHandler;
-    // while (game.getIsRunning()) {
-    //     std::cout<<"Game is running"<<std::endl;
-    //     game.update(0.1f);
-    //     // game.draw();
-    //     char key;
-    //     std::cin >> key;
-    //     inputHandler.handleInput(key,game);
-    // }
+    // Create a GLFW window
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    test_Vector3D();
-    test_Block();
-    test_TetrominoMovement();
-    test_Grid();
-    test_Game();
+    GLFWwindow* window = glfwCreateWindow(1600, 1200, "Tetris 3D", nullptr, nullptr);
+    if (!window) {
+        std::cerr << "Error: Failed to create GLFW window" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+    glfwMakeContextCurrent(window);
 
-    std::cout << "All tests passed!" << std::endl;
+    // Initialize GLEW
+    glewExperimental = GL_TRUE;
+    if (glewInit() != GLEW_OK) {
+        std::cerr << "Error: Failed to initialize GLEW" << std::endl;
+        glfwDestroyWindow(window);
+        glfwTerminate();
+        return -1;
+    }
+
+    // Configure OpenGL viewport and settings
+    int viewportWidth, viewportHeight;
+    glfwGetFramebufferSize(window, &viewportWidth, &viewportHeight);
+    glViewport(0, 0, viewportWidth, viewportHeight);
+    glEnable(GL_DEPTH_TEST);
+
+    // Set the initial game state
+    GameState state = MenuPrincipal;
+    Game game(4, 16, 4);
+    Renderer renderer;
+    Menu menu(window, state);
+    HowToPlayScreen howToPlayScreen(window, state);
+
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)viewportWidth / viewportHeight, 0.1f, 100.0f);
+    glm::mat4 view = glm::lookAt(glm::vec3(15, 25, 15), glm::vec3(5, 10, 5), glm::vec3(0, 1, 0));
+
+    // Main loop
+    while (!glfwWindowShouldClose(window)) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glfwSetWindowUserPointer(window, &game);
+                glfwSetKeyCallback(window, key_callback);
+        
+        switch (state) {
+            case MenuPrincipal:
+                menu.displayMenu(); // display the menu
+                break;
+            case Playing:
+                if(game.getIsRunning()){
+                    game.update(0.016f); // Start the game
+                    renderer.renderGame(game, projection, view);
+                } else {
+                    state = GameOver;
+                }
+                break;
+            case HowToPlay:
+                howToPlayScreen.display();
+                break;
+            case GameOver:
+                game.start();
+                // Optionally implement a game over screen if needed
+                state = MenuPrincipal; // Ensure it loops back to the menu
+                break;
+        }
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+
+    // Clean up
+    glfwDestroyWindow(window);
+    glfwTerminate();
     return 0;
-
 }
