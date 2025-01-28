@@ -949,25 +949,27 @@ class Game{
             renderer.setGrille(WIDTH, HEIGHT, DEPTH);
         }
 
-        void run(){
+        void run() {
             glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)1600 / 1200, 0.1f, 100.0f);
             glm::mat4 view = glm::lookAt(glm::vec3(15, 25, 15), glm::vec3(5, 10, 5), glm::vec3(0, 1, 0));
 
-            while (!glfwWindowShouldClose(window)) {
-                // Limpiar la pantalla
+            while (!glfwWindowShouldClose(window) && isRunning) {
+                // Clear the screen
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 glEnable(GL_DEPTH_TEST);
 
                 if (isRunning) {
                     update(0.005f);
-                    renderer.render(projection, view,score, level, linesClearedTotal);
+                    renderer.render(projection, view, score, level, linesClearedTotal);
                 }
-                
 
-                // Intercambiar buffers y procesar eventos
                 glfwSwapBuffers(window);
                 glfwPollEvents();
             }
+
+            // Ensure OpenGL state is reset
+            glDisable(GL_DEPTH_TEST);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         }
 
         void update(float deltaTime) {
@@ -1369,23 +1371,24 @@ int main() {
                 menu.displayMenu(); // display the menu
                 break;
             case Playing:
-                glfwSetWindowUserPointer(window,&game);
-                glfwSetKeyCallback(window,key_callback);
+                glfwSetWindowUserPointer(window, &game);
+                glfwSetKeyCallback(window, key_callback);
                 game.run(); // Start the game
-                state = GameOver; // Temporary, for when the game ends
+                state = MenuPrincipal; // Return to the main menu when the game ends
                 break;
             case HowToPlay:
                 howToPlayScreen.display();
                 break;
             case GameOver:
-                // Implement a game over screen or restart logic if needed
-                glfwSetWindowShouldClose(window, true);
+                // Optionally implement a game over screen if needed
+                state = MenuPrincipal; // Ensure it loops back to the menu
                 break;
         }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
 
     // Clean up
     glfwDestroyWindow(window);
